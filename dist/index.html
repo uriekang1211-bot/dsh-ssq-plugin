@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>双色球助手 · 趋势追踪 · 智能预测 · 胆拖/随机选号</title>
+<style>
+:root{
+  --bg:#f2f4f8; --card:#ffffff; --ink:#1c2430; --muted:#6b7686; --line:#e4e9f0;
+  --red:#d63b3b; --red-deep:#b3261e; --red-soft:#fdecec;
+  --blue:#2f6fed; --blue-soft:#eaf1fe;
+  --warm:#e8952f; --warm-soft:#fdf3e3;
+  --green:#2fa35c; --green-soft:#e9f7ef;
+  --radius:12px; --shadow:0 1px 3px rgba(20,30,60,.06);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Segoe UI",Roboto,sans-serif;line-height:1.55}
+.wrap{max-width:1120px;margin:0 auto;padding:22px 16px 70px}
+h1{font-size:22px;margin:0;letter-spacing:.5px}
+h3{font-size:15px;margin:0 0 10px}
+.head-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.head-sub{color:var(--muted);font-size:13px;margin:8px 0 0}
+.head-actions{display:flex;gap:8px;flex-wrap:wrap}
+code{background:#eef1f6;padding:1px 6px;border-radius:5px;font-size:12px}
+
+.hidden{display:none!important}
+.hint{color:var(--muted);font-size:12px;margin:6px 0 0}
+.summary{font-size:13px;margin-top:10px;padding:8px 10px;background:#f7f9fc;border:1px dashed var(--line);border-radius:8px}
+
+/* ---- tabs ---- */
+.tabs{display:flex;gap:8px;margin:18px 0 16px;flex-wrap:wrap}
+.tab-btn{border:1px solid var(--line);background:var(--card);color:var(--muted);padding:9px 18px;border-radius:999px;font-size:14px;cursor:pointer;transition:all .15s}
+.tab-btn:hover{color:var(--ink);border-color:#c9d3e0}
+.tab-btn.active{background:var(--red);border-color:var(--red);color:#fff;font-weight:600;box-shadow:0 2px 8px rgba(214,59,59,.3)}
+.panel{display:none}
+.panel.active{display:block;animation:fade .2s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* ---- cards ---- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.card-head h3{margin:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:860px){.grid2{grid-template-columns:1fr}}
+
+/* ---- controls ---- */
+.ctrl-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.ctrl-row label{font-size:13px;color:var(--ink);display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+select,input[type=number]{font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+select:focus,input:focus{outline:2px solid var(--blue-soft);border-color:var(--blue)}
+input[type=number]{width:70px}
+textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;resize:vertical}
+.radio{display:inline-flex!important;align-items:center;gap:4px}
+.radio .hint{margin:0 0 0 4px}
+.btn{border:1px solid var(--line);background:#fff;color:var(--ink);padding:8px 16px;border-radius:9px;font-size:13px;cursor:pointer;transition:all .15s}
+.btn:hover{border-color:#c9d3e0;background:#f8fafc}
+.btn.primary{background:var(--red);border-color:var(--red);color:#fff;font-weight:600}
+.btn.primary:hover{background:var(--red-deep)}
+.btn.primary:disabled,.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.ghost{background:transparent}
+.btn-row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+.legend{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)}
+.lg{width:10px;height:10px;border-radius:3px;display:inline-block}
+.lg.hot{background:var(--red)} .lg.warm{background:var(--warm)} .lg.cold{background:var(--blue)}
+
+/* ---- tables ---- */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+.tbl-wrap.scroll{max-height:420px;overflow-y:auto}
+table{border-collapse:collapse;width:100%;font-size:13px;min-width:640px}
+th,td{padding:7px 10px;text-align:center;border-bottom:1px solid var(--line);white-space:nowrap}
+th{background:#f7f9fc;color:var(--muted);font-weight:600;position:sticky;top:0;z-index:1}
+tbody tr:hover{background:#f8fafc}
+tbody tr.sel-row{background:var(--blue-soft)}
+td.num,td.blue{font-weight:700}
+.badge{display:inline-block;padding:1px 9px;border-radius:999px;font-size:12px;font-weight:600}
+.badge.hot{background:var(--red-soft);color:var(--red)}
+.badge.warm{background:var(--warm-soft);color:#a8640e}
+.badge.cold{background:var(--blue-soft);color:var(--blue)}
+.up{color:var(--red);font-weight:700}.down{color:var(--blue);font-weight:700}.flat{color:var(--muted)}
+.prob-bar{height:8px;border-radius:4px;background:var(--red);opacity:.85}
+.prob-cell{display:flex;align-items:center;gap:8px;min-width:120px}
+.prob-cell .pval{min-width:52px;text-align:right;font-variant-numeric:tabular-nums}
+
+/* ---- charts ---- */
+canvas{width:100%;display:block}
+
+/* ---- heatmap ---- */
+.heat{display:flex;flex-direction:column;gap:3px;margin-top:8px}
+.heat-row{display:flex;gap:2px;align-items:center}
+.heat-label{font-size:10px;color:var(--muted);min-width:64px;text-align:right;margin-right:4px;white-space:nowrap}
+.heat-cell{width:16px;height:16px;border-radius:3px;background:#eef1f6;flex:none}
+.heat-cell.on-red{background:var(--red)}
+.heat-cell.on-blue{background:var(--blue)}
+.heat-x{display:flex;gap:2px;margin-left:68px}
+.heat-x span{width:16px;font-size:9px;color:var(--muted);text-align:center;flex:none}
+
+/* ---- chips / numbers ---- */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.chip{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;font-weight:700;font-size:15px;background:var(--red);color:#fff;box-shadow:0 2px 6px rgba(214,59,59,.35)}
+.chip.blue{background:var(--blue);box-shadow:0 2px 6px rgba(47,111,237,.35)}
+.chip.small{width:30px;height:30px;font-size:13px}
+.combo{display:flex;align-items:center;gap:5px;padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;margin:4px 0;font-size:14px}
+.combo b{color:var(--muted);font-weight:600;margin-right:4px}
+.combo .chip{width:30px;height:30px;font-size:13px;box-shadow:none}
+.combo .chip.blue{background:var(--blue)}
+.chips-col{margin-top:10px}
+.gen-count{color:var(--muted);font-size:12px;margin:6px 0 2px}
+
+/* ---- number grid (胆拖选择) ---- */
+.num-grid{display:grid;grid-template-columns:repeat(11,1fr);gap:6px;margin:6px 0 12px}
+.blue-grid{grid-template-columns:repeat(8,1fr)}
+.num{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 0;font-size:13px;font-weight:600;cursor:pointer;transition:all .12s;color:var(--ink)}
+.num:hover{border-color:#c9d3e0;background:#f8fafc}
+.num.dan{background:var(--red);border-color:var(--red);color:#fff}
+.num.tuo{background:var(--warm-soft);border-color:var(--warm);color:#a8640e}
+.num.blue-sel{background:var(--blue);border-color:var(--blue);color:#fff}
+
+/* ---- misc ---- */
+.warn-card{background:#fff8ec;border-color:#f3ddb0}
+.disclaimer{font-size:12px;color:var(--muted);text-align:center;margin:26px 0 0}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="head-row">
+      <h1>🎱 双色球助手</h1>
+      <div class="head-actions">
+        <button id="btnOnline" class="btn ghost" title="尝试从中国福彩官网接口拉取最新数据">在线更新</button>
+        <button id="btnExport" class="btn ghost" title="把当前数据导出为 JSON 文件，日后可再导入">导出数据</button>
+        <button id="btnImport" class="btn ghost" title="粘贴或导入 JSON 数据">导入数据</button>
+      </div>
+    </div>
+    <p class="head-sub">
+      数据源：中国福利彩票发行管理中心（cwl.gov.cn）｜
+      窗口：最近 <b id="dataCount">–</b> 期（含最新一期 <b id="dataLatest">–</b>）
+    </p>
+    <div id="importPanel" class="card hidden">
+      <p>将「双色球历史数据 JSON」（形如 <code>{"result":[{"code":"2026094","red":"06,13,15,17,24,25","blue":"01"}, ...]}</code>，最新期在前）粘贴到下面：</p>
+      <textarea id="importText" rows="6" placeholder='{"result":[{...}]}'></textarea>
+      <div class="btn-row">
+        <button id="btnImportGo" class="btn primary">导入并重新统计</button>
+        <button id="btnImportClose" class="btn ghost">取消</button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="tab-trend">📈 趋势追踪</button>
+    <button class="tab-btn" data-tab="tab-predict">🎯 智能预测</button>
+    <button class="tab-btn" data-tab="tab-gen">🎲 选号生成</button>
+  </nav>
+
+  <!-- ==================== 趋势追踪 ==================== -->
+  <section id="tab-trend" class="panel active">
+    <div class="card">
+      <div class="ctrl-row">
+        <label>统计窗口
+          <select id="winSelect">
+            <option value="10">最近 10 期</option>
+            <option value="20">最近 20 期</option>
+            <option value="30">最近 30 期</option>
+            <option value="50">最近 50 期</option>
+            <option value="80">最近 80 期</option>
+            <option value="100" selected>最近 100 期</option>
+          </select>
+        </label>
+        <label>明细排序
+          <select id="sortSelect">
+            <option value="cnt" selected>出现次数 ↓</option>
+            <option value="gap">当前遗漏 ↓</option>
+            <option value="maxgap">最大遗漏 ↓</option>
+            <option value="freq">出现频率 ↓</option>
+          </select>
+        </label>
+        <label>热力图期数
+          <select id="heatSelect">
+            <option value="10">最近 10 期</option>
+            <option value="20" selected>最近 20 期</option>
+            <option value="30">最近 30 期</option>
+            <option value="50">最近 50 期</option>
+          </select>
+        </label>
+        <span class="legend">
+          <i class="lg hot"></i>热号 <i class="lg warm"></i>温号 <i class="lg cold"></i>冷号
+        </span>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>红球（1–33）出现次数分布</h3>
+        <canvas id="redBars" height="230"></canvas>
+        <p class="hint">点击柱子可查看该号码的走势曲线</p>
+      </div>
+      <div class="card">
+        <h3>蓝球（1–16）出现次数分布</h3>
+        <canvas id="blueBars" height="230"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>红球明细（点击行查看走势）</h3>
+        <span id="redStatInfo" class="hint"></span>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>号码</th><th>次数</th><th>频率</th><th>近10期</th><th>当前遗漏</th>
+            <th>最大遗漏</th><th>平均遗漏</th><th>状态</th><th>趋势</th>
+          </tr></thead>
+          <tbody id="redTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>蓝球明细</h3>
+        <span id="blueStatInfo" class="hint"></span>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>号码</th><th>次数</th><th>频率</th><th>近10期</th><th>当前遗漏</th>
+            <th>最大遗漏</th><th>平均遗漏</th><th>状态</th><th>趋势</th>
+          </tr></thead>
+          <tbody id="blueTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>红球出现热力图</h3>
+        <div id="redHeat" class="heat"></div>
+      </div>
+      <div class="card">
+        <h3>蓝球出现热力图</h3>
+        <div id="blueHeat" class="heat"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3 id="selTitle">单号走势（滚动 10 期出现频率）</h3>
+        <span id="selDetail" class="hint"></span>
+      </div>
+      <canvas id="lineChart" height="220"></canvas>
+    </div>
+  </section>
+
+  <!-- ==================== 智能预测 ==================== -->
+  <section id="tab-predict" class="panel">
+    <div class="card warn-card">
+      ⚠️ <b>理性提示：</b>双色球每次开奖均为独立随机事件，任何统计方法都无法提高中奖概率。
+      以下预测仅基于历史频率/遗漏等信号的<b>娱乐性估算</b>，请量力而行、理性购彩。
+    </div>
+    <div class="card">
+      <h3>预测模型</h3>
+      <div class="ctrl-row">
+        <label class="radio"><input type="radio" name="preset" value="balanced" checked> 均衡混合
+          <span class="hint">频率 40% · 近期 30% · 遗漏回补 30%</span></label>
+        <label class="radio"><input type="radio" name="preset" value="cold"> 冷号回补
+          <span class="hint">侧重当前遗漏超期未出的号码</span></label>
+        <label class="radio"><input type="radio" name="preset" value="hot"> 热号延续
+          <span class="hint">侧重近期高频出现的号码</span></label>
+      </div>
+      <div class="btn-row">
+        <button id="btnPredict" class="btn primary">开始预测下一期</button>
+        <button id="btnPredSim" class="btn" disabled>按预测概率模拟 10 注</button>
+      </div>
+    </div>
+
+    <div id="predResult" class="hidden">
+      <div class="card">
+        <div class="card-head">
+          <h3>📌 预测推荐</h3>
+          <span id="predModelName" class="hint"></span>
+        </div>
+        <div id="predRec" class="chips"></div>
+        <p id="predBlueAlt" class="hint"></p>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h3>红球预测概率排名</h3>
+          <div class="tbl-wrap scroll">
+            <table>
+              <thead><tr><th>排名</th><th>号码</th><th>预测概率</th><th>下期期望次数</th><th>信号分解</th></tr></thead>
+              <tbody id="predRedBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <h3>蓝球预测概率排名</h3>
+          <div class="tbl-wrap scroll">
+            <table>
+              <thead><tr><th>排名</th><th>号码</th><th>预测概率</th><th>信号分解</th></tr></thead>
+              <tbody id="predBlueBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>预测模拟号码（按概率加权随机）</h3>
+        <div id="predSim" class="chips-col"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 选号生成 ==================== -->
+  <section id="tab-gen" class="panel">
+    <div class="grid2">
+      <div class="card">
+        <h3>🎲 纯随机选号</h3>
+        <p class="hint">完全随机生成 6 个红球（1–33）+ 1 个蓝球（1–16）。</p>
+        <div class="ctrl-row">
+          <label>注数
+            <input id="randCount" type="number" min="1" max="50" value="5">
+          </label>
+          <button id="btnRand" class="btn primary">随机生成</button>
+        </div>
+        <div id="randResult" class="chips-col"></div>
+      </div>
+
+      <div class="card">
+        <h3>🎯 胆拖选号（双色球胆拖规则）</h3>
+        <p class="hint">
+          规则：胆码 <b>1–5 个</b>（每注必中）；拖码至少 <b>6 − 胆码数</b> 个；每注 = 全部胆码 + 从拖码中取足 6 个红球 + 1 个蓝球。
+        </p>
+        <div class="ctrl-row">
+          <label class="radio"><input type="radio" name="dtmode" value="dan" checked> 选胆码</label>
+          <label class="radio"><input type="radio" name="dtmode" value="tuo"> 选拖码</label>
+          <label class="radio"><input type="radio" name="dtmode" value="blue"> 选蓝球</label>
+          <button id="btnDtClear" class="btn ghost">清空</button>
+        </div>
+        <p class="hint">红球：</p>
+        <div id="danGrid" class="num-grid"></div>
+        <p class="hint">蓝球：</p>
+        <div id="blueGrid" class="num-grid blue-grid"></div>
+        <div id="dtSummary" class="summary"></div>
+        <div class="ctrl-row">
+          <button id="btnDtAll" class="btn primary">生成全部组合</button>
+          <label>随机抽
+            <input id="dtSample" type="number" min="1" max="100" value="5"> 注
+          </label>
+          <button id="btnDtSample" class="btn">抽取</button>
+          <button id="btnDtDownload" class="btn ghost hidden">导出全部为 .txt</button>
+        </div>
+        <div id="dtResult" class="chips-col"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p class="disclaimer">
+      ⚠️ 本工具仅供学习与娱乐参考，不构成任何投注建议。彩票开奖为独立随机事件，
+      请理性购彩、量力而行，未成年人禁止购彩。<br>
+      <span class="hint">数据来源：中国福利彩票发行管理中心公开开奖公告（cwl.gov.cn）及其每日更新的 GitHub 镜像。
+      更新数据：点「在线更新」（自动多源降级：官方直连 → GitHub 镜像 → CDN）；仍失败可运行本机脚本
+      <code>node update-data.mjs</code> 一键更新，或用「导出数据 / 导入数据」手动替换。</span>
+    </p>
+  </footer>
+</div>
+
+<script>
+"use strict";
+const EMBEDDED_DATA = {"state":0,"message":"查询成功","Tflag":0,"result":[{"name":"双色球","code":"2026094","detailsLink":"/c/2026/08/16/664275.shtml","videoLink":"/c/2026/08/16/664279.shtml","date":"2026-08-16(日)","week":"日","red":"06,13,15,17,24,25","blue":"01","blue2":"","sales":"373881722","poolmoney":"616242219","content":"北京1注，江苏2注，四川1注，共4注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"4","typemoney":"10000000"},{"type":2,"typenum":"142","typemoney":"210861"},{"type":3,"typenum":"988","typemoney":"3000"},{"type":4,"typenum":"53492","typemoney":"200"},{"type":5,"typenum":"1139023","typemoney":"10"},{"type":6,"typenum":"7676033","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026093","detailsLink":"/c/2026/08/13/664156.shtml","videoLink":"/c/2026/08/13/664160.shtml","date":"2026-08-13(四)","week":"四","red":"05,08,15,20,21,24","blue":"09","blue2":"","sales":"348046564","poolmoney":"566415284","content":"辽宁2注，江苏5注，湖南1注，共8注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"8","typemoney":"6581443"},{"type":2,"typenum":"109","typemoney":"145086"},{"type":3,"typenum":"2079","typemoney":"3000"},{"type":4,"typenum":"90500","typemoney":"200"},{"type":5,"typenum":"1517204","typemoney":"10"},{"type":6,"typenum":"13555209","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026092","detailsLink":"/c/2026/08/11/663942.shtml","videoLink":"/c/2026/08/11/663945.shtml","date":"2026-08-11(二)","week":"二","red":"09,11,12,25,30,33","blue":"11","blue2":"","sales":"339633672","poolmoney":"571623532","content":"山西6注，内蒙古1注，安徽1注，江西1注，山东1注，广西1注，四川1注，共12注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"12","typemoney":"6466298"},{"type":2,"typenum":"79","typemoney":"278411"},{"type":3,"typenum":"1317","typemoney":"3000"},{"type":4,"typenum":"64191","typemoney":"200"},{"type":5,"typenum":"1232442","typemoney":"10"},{"type":6,"typenum":"9865794","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026091","detailsLink":"/c/2026/08/09/663728.shtml","videoLink":"/c/2026/08/09/663732.shtml","date":"2026-08-09(日)","week":"日","red":"02,13,14,16,20,24","blue":"05","blue2":"","sales":"367362274","poolmoney":"583235682","content":"湖南1注，广东1注，新疆1注，深圳1注，共4注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"4","typemoney":"10000000"},{"type":2,"typenum":"79","typemoney":"328709"},{"type":3,"typenum":"952","typemoney":"3000"},{"type":4,"typenum":"54095","typemoney":"200"},{"type":5,"typenum":"1136984","typemoney":"10"},{"type":6,"typenum":"10218077","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026090","detailsLink":"/c/2026/08/06/663509.shtml","videoLink":"/c/2026/08/06/663511.shtml","date":"2026-08-06(四)","week":"四","red":"02,04,15,23,25,27","blue":"03","blue2":"","sales":"348980318","poolmoney":"545331466","content":"江苏1注，江西1注，广东1注，共3注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"3","typemoney":"10000000"},{"type":2,"typenum":"86","typemoney":"332528"},{"type":3,"typenum":"778","typemoney":"3000"},{"type":4,"typenum":"44670","typemoney":"200"},{"type":5,"typenum":"974264","typemoney":"10"},{"type":6,"typenum":"7119988","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026089","detailsLink":"/c/2026/08/04/663095.shtml","videoLink":"/c/2026/08/04/663099.shtml","date":"2026-08-04(二)","week":"二","red":"05,18,23,24,27,33","blue":"03","blue2":"","sales":"345041020","poolmoney":"489539135","content":"黑龙江1注，贵州1注，新疆1注，共3注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"3","typemoney":"10000000"},{"type":2,"typenum":"88","typemoney":"293109"},{"type":3,"typenum":"950","typemoney":"3000"},{"type":4,"typenum":"56950","typemoney":"200"},{"type":5,"typenum":"1162655","typemoney":"10"},{"type":6,"typenum":"8005826","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026088","detailsLink":"/c/2026/08/02/662881.shtml","videoLink":"/c/2026/08/02/662885.shtml","date":"2026-08-02(日)","week":"日","red":"06,07,11,18,22,33","blue":"05","blue2":"","sales":"373747432","poolmoney":"442158322","content":"天津1注，河北13注，黑龙江3注，浙江3注，河南1注，湖南1注，广西7注，四川2注，云南1注，陕西1注，深圳1注，共34注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"本期“一等奖”奖金总额超出1亿元，触发一等奖封顶规定，根据中国福利彩票双色球游戏规则，“一等奖”奖级单注奖金相应调整，调整后金额详见“中奖情况表”。","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"34","typemoney":"2941176"},{"type":2,"typenum":"506","typemoney":"45037"},{"type":3,"typenum":"2438","typemoney":"3000"},{"type":4,"typenum":"112457","typemoney":"200"},{"type":5,"typenum":"1707004","typemoney":"10"},{"type":6,"typenum":"9020891","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026087","detailsLink":"/c/2026/07/30/662662.shtml","videoLink":"/c/2026/07/30/662666.shtml","date":"2026-07-30(四)","week":"四","red":"04,06,10,18,23,31","blue":"11","blue2":"","sales":"349545040","poolmoney":"473791046","content":"北京1注，内蒙古2注，浙江1注，安徽1注，福建1注，河南1注，宁夏1注，共8注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"8","typemoney":"7296989"},{"type":2,"typenum":"108","typemoney":"212684"},{"type":3,"typenum":"1440","typemoney":"3000"},{"type":4,"typenum":"68524","typemoney":"200"},{"type":5,"typenum":"1256080","typemoney":"10"},{"type":6,"typenum":"9762375","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026086","detailsLink":"/c/2026/07/28/662348.shtml","videoLink":"/c/2026/07/28/662351.shtml","date":"2026-07-28(二)","week":"二","red":"02,05,14,25,30,32","blue":"05","blue2":"","sales":"345608568","poolmoney":"463257269","content":"天津1注，江苏2注，山东1注，河南2注，云南1注，共7注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"7","typemoney":"7501853"},{"type":2,"typenum":"195","typemoney":"112262"},{"type":3,"typenum":"1728","typemoney":"3000"},{"type":4,"typenum":"89274","typemoney":"200"},{"type":5,"typenum":"1568832","typemoney":"10"},{"type":6,"typenum":"8611243","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026085","detailsLink":"/c/2026/07/26/662034.shtml","videoLink":"/c/2026/07/26/662038.shtml","date":"2026-07-26(日)","week":"日","red":"06,09,13,17,24,28","blue":"15","blue2":"","sales":"368292652","poolmoney":"450096595","content":"天津2注，河北1注，江苏1注，浙江1注，重庆2注，河南1注，广东7注，云南1注，陕西1注，共17注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"本期“一等奖”奖金总额超出1亿元，触发一等奖封顶规定，根据中国福利彩票双色球游戏规则，“一等奖”奖级单注奖金相应调整，调整后金额详见“中奖情况表”。","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"17","typemoney":"5882352"},{"type":2,"typenum":"326","typemoney":"71094"},{"type":3,"typenum":"1961","typemoney":"3000"},{"type":4,"typenum":"95174","typemoney":"200"},{"type":5,"typenum":"1524669","typemoney":"10"},{"type":6,"typenum":"9518441","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026084","detailsLink":"/c/2026/07/23/661915.shtml","videoLink":"/c/2026/07/23/661918.shtml","date":"2026-07-23(四)","week":"四","red":"01,05,06,10,12,16","blue":"05","blue2":"","sales":"348718788","poolmoney":"480566551","content":"河北1注，安徽1注，福建1注，河南2注，广东1注，广西1注，宁夏1注，深圳2注，共10注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"10","typemoney":"6809591"},{"type":2,"typenum":"107","typemoney":"211400"},{"type":3,"typenum":"1339","typemoney":"3000"},{"type":4,"typenum":"71880","typemoney":"200"},{"type":5,"typenum":"1332819","typemoney":"10"},{"type":6,"typenum":"9734286","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026083","detailsLink":"/c/2026/07/21/661601.shtml","videoLink":"/c/2026/07/21/661605.shtml","date":"2026-07-21(二)","week":"二","red":"07,14,15,23,28,33","blue":"03","blue2":"","sales":"348240258","poolmoney":"480802779","content":"共0注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"0","typemoney":"0"},{"type":2,"typenum":"111","typemoney":"214159"},{"type":3,"typenum":"1277","typemoney":"3000"},{"type":4,"typenum":"59735","typemoney":"200"},{"type":5,"typenum":"1122950","typemoney":"10"},{"type":6,"typenum":"9708655","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026082","detailsLink":"/c/2026/07/19/661387.shtml","videoLink":"/c/2026/07/19/661389.shtml","date":"2026-07-19(日)","week":"日","red":"05,07,10,14,21,28","blue":"04","blue2":"","sales":"375000824","poolmoney":"409487566","content":"河北1注，山西1注，上海1注，浙江2注，福建3注，山东1注，四川1注，共10注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"10","typemoney":"7104774"},{"type":2,"typenum":"215","typemoney":"122370"},{"type":3,"typenum":"1472","typemoney":"3000"},{"type":4,"typenum":"81044","typemoney":"200"},{"type":5,"typenum":"1528508","typemoney":"10"},{"type":6,"typenum":"8520356","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026081","detailsLink":"/c/2026/07/16/661168.shtml","videoLink":"/c/2026/07/16/661171.shtml","date":"2026-07-16(四)","week":"四","red":"06,10,12,15,24,27","blue":"12","blue2":"","sales":"350765488","poolmoney":"401606257","content":"吉林1注，浙江1注，山东1注，湖北1注，贵州1注，共5注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"5","typemoney":"8082773"},{"type":2,"typenum":"137","typemoney":"140637"},{"type":3,"typenum":"2122","typemoney":"3000"},{"type":4,"typenum":"86286","typemoney":"200"},{"type":5,"typenum":"1465960","typemoney":"10"},{"type":6,"typenum":"11304589","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026080","detailsLink":"/c/2026/07/14/660854.shtml","videoLink":"/c/2026/07/14/660857.shtml","date":"2026-07-14(二)","week":"二","red":"04,05,11,19,27,32","blue":"01","blue2":"","sales":"344697650","poolmoney":"384218118","content":"安徽5注，湖北2注，云南1注，共8注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"8","typemoney":"7579965"},{"type":2,"typenum":"132","typemoney":"195451"},{"type":3,"typenum":"1073","typemoney":"3000"},{"type":4,"typenum":"58791","typemoney":"200"},{"type":5,"typenum":"1195292","typemoney":"10"},{"type":6,"typenum":"7754625","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026079","detailsLink":"/c/2026/07/12/660640.shtml","videoLink":"/c/2026/07/12/660643.shtml","date":"2026-07-12(日)","week":"日","red":"01,11,17,22,24,29","blue":"04","blue2":"","sales":"373452200","poolmoney":"367458887","content":"内蒙古1注，共1注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"1","typemoney":"10000000"},{"type":2,"typenum":"109","typemoney":"280814"},{"type":3,"typenum":"900","typemoney":"3000"},{"type":4,"typenum":"52436","typemoney":"200"},{"type":5,"typenum":"1117595","typemoney":"10"},{"type":6,"typenum":"7238702","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026078","detailsLink":"/c/2026/07/09/660420.shtml","videoLink":"/c/2026/07/09/660423.shtml","date":"2026-07-09(四)","week":"四","red":"07,11,14,16,27,28","blue":"06","blue2":"","sales":"355852948","poolmoney":"285632700","content":"河北2注，上海1注，江苏3注，浙江1注，福建2注，江西1注，山东1注，湖北1注，四川1注，云南1注，陕西1注，共15注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"15","typemoney":"5983174"},{"type":2,"typenum":"176","typemoney":"104741"},{"type":3,"typenum":"2272","typemoney":"3000"},{"type":4,"typenum":"105785","typemoney":"200"},{"type":5,"typenum":"1728805","typemoney":"10"},{"type":6,"typenum":"11073756","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026077","detailsLink":"/c/2026/07/07/660106.shtml","videoLink":"/c/2026/07/07/660110.shtml","date":"2026-07-07(二)","week":"二","red":"01,04,05,14,18,25","blue":"04","blue2":"","sales":"353662546","poolmoney":"320076738","content":"北京1注，辽宁1注，四川3注，甘肃1注，共6注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"6","typemoney":"8516882"},{"type":2,"typenum":"114","typemoney":"231373"},{"type":3,"typenum":"1129","typemoney":"3000"},{"type":4,"typenum":"59770","typemoney":"200"},{"type":5,"typenum":"1197149","typemoney":"10"},{"type":6,"typenum":"8095138","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026076","detailsLink":"/c/2026/07/05/659692.shtml","videoLink":"/c/2026/07/05/659696.shtml","date":"2026-07-05(日)","week":"日","red":"01,03,19,20,24,25","blue":"07","blue2":"","sales":"382507054","poolmoney":"292048181","content":"江苏1注，浙江1注，河南1注，四川2注，陕西1注，共6注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"6","typemoney":"7355406"},{"type":2,"typenum":"150","typemoney":"117770"},{"type":3,"typenum":"2031","typemoney":"3000"},{"type":4,"typenum":"92842","typemoney":"200"},{"type":5,"typenum":"1664242","typemoney":"10"},{"type":6,"typenum":"15092486","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026075","detailsLink":"/c/2026/07/02/659473.shtml","videoLink":"/c/2026/07/02/659478.shtml","date":"2026-07-02(四)","week":"四","red":"08,12,18,21,24,30","blue":"01","blue2":"","sales":"370657052","poolmoney":"283183968","content":"北京1注，江西1注，山东1注，云南1注，宁夏1注，共5注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"根据中国福利彩票双色球游戏规则，自2026076期（2026年07月05日开奖）起不执行特别规定。","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"9299611","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"5","typemoney":"7840223"},{"type":2,"typenum":"102","typemoney":"556906"},{"type":3,"typenum":"979","typemoney":"3000"},{"type":4,"typenum":"57468","typemoney":"200"},{"type":5,"typenum":"1225768","typemoney":"10"},{"type":6,"typenum":"7486006","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026074","detailsLink":"/c/2026/06/30/659159.shtml","videoLink":"/c/2026/06/30/659163.shtml","date":"2026-06-30(二)","week":"二","red":"02,23,24,26,28,32","blue":"04","blue2":"","sales":"370952514","poolmoney":"308183968","content":"浙江1注，广东1注，云南1注，陕西1注，共4注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"8562185","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"4","typemoney":"8277839"},{"type":2,"typenum":"98","typemoney":"535157"},{"type":3,"typenum":"994","typemoney":"3000"},{"type":4,"typenum":"57390","typemoney":"200"},{"type":5,"typenum":"1199876","typemoney":"10"},{"type":6,"typenum":"9388053","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026073","detailsLink":"/c/2026/06/28/658945.shtml","videoLink":"/c/2026/06/28/658949.shtml","date":"2026-06-28(日)","week":"日","red":"09,10,13,16,19,21","blue":"08","blue2":"","sales":"398594042","poolmoney":"328183968","content":"山西1注，福建1注，广东2注，广西1注，四川2注，贵州1注，陕西1注，甘肃1注，共10注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"9943535","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"10","typemoney":"6111492"},{"type":2,"typenum":"136","typemoney":"326909"},{"type":3,"typenum":"1395","typemoney":"3000"},{"type":4,"typenum":"74961","typemoney":"200"},{"type":5,"typenum":"1464286","typemoney":"10"},{"type":6,"typenum":"11239744","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026072","detailsLink":"/c/2026/06/25/658626.shtml","videoLink":"/c/2026/06/25/658629.shtml","date":"2026-06-25(四)","week":"四","red":"07,08,12,15,17,21","blue":"01","blue2":"","sales":"377591844","poolmoney":"378183968","content":"浙江1注，广东1注，新疆2注，共4注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"9503606","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"4","typemoney":"8287457"},{"type":2,"typenum":"143","typemoney":"367827"},{"type":3,"typenum":"1314","typemoney":"3000"},{"type":4,"typenum":"62488","typemoney":"200"},{"type":5,"typenum":"1269104","typemoney":"10"},{"type":6,"typenum":"8524438","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026071","detailsLink":"/c/2026/06/23/658412.shtml","videoLink":"/c/2026/06/23/658416.shtml","date":"2026-06-23(二)","week":"二","red":"03,08,19,25,31,33","blue":"05","blue2":"","sales":"373089958","poolmoney":"398183968","content":"吉林1注，黑龙江1注，浙江1注，广东3注，甘肃1注，新疆1注，共8注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"9094821","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"8","typemoney":"5867768"},{"type":2,"typenum":"121","typemoney":"229492"},{"type":3,"typenum":"2419","typemoney":"3000"},{"type":4,"typenum":"121168","typemoney":"200"},{"type":5,"typenum":"1503066","typemoney":"10"},{"type":6,"typenum":"11221596","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026070","detailsLink":"/c/2026/06/21/658098.shtml","videoLink":"/c/2026/06/21/658102.shtml","date":"2026-06-21(日)","week":"日","red":"03,06,08,14,26,27","blue":"08","blue2":"","sales":"398555946","poolmoney":"438183968","content":"北京1注，浙江1注，安徽2注，福建1注，江西1注，河南3注，广东1注，广西1注，共11注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"10565919","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"11","typemoney":"5811271"},{"type":2,"typenum":"216","typemoney":"165258"},{"type":3,"typenum":"2030","typemoney":"3000"},{"type":4,"typenum":"98536","typemoney":"200"},{"type":5,"typenum":"1700584","typemoney":"10"},{"type":6,"typenum":"11007971","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026069","detailsLink":"/c/2026/06/18/658078.shtml","videoLink":"/c/2026/06/18/658083.shtml","date":"2026-06-18(四)","week":"四","red":"12,14,16,17,18,32","blue":"08","blue2":"","sales":"373992648","poolmoney":"493183968","content":"北京2注，黑龙江1注，上海1注，浙江8注，江西2注，湖北1注，广东1注，广西1注，贵州1注，陕西3注，深圳1注，共22注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"本期“一等奖”奖金总额超出1亿元，触发一等奖封顶规定，根据中国福利彩票双色球游戏规则，“一等奖”奖级单注奖金相应调整，调整后金额详见“中奖情况表”。","compLimitInfo":"","fyjCount":"8110019","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"22","typemoney":"4545454"},{"type":2,"typenum":"955","typemoney":"19746"},{"type":3,"typenum":"1629","typemoney":"3000"},{"type":4,"typenum":"79829","typemoney":"200"},{"type":5,"typenum":"1472714","typemoney":"10"},{"type":6,"typenum":"16710739","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026068","detailsLink":"/c/2026/06/16/657864.shtml","videoLink":"/c/2026/06/16/657868.shtml","date":"2026-06-16(二)","week":"二","red":"03,05,16,18,29,32","blue":"04","blue2":"","sales":"379517740","poolmoney":"588469423","content":"北京1注，山西3注，江苏1注，山东1注，湖南1注，广西1注，四川2注，陕西2注，甘肃1注，深圳1注，共14注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"8914416","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"14","typemoney":"5649404"},{"type":2,"typenum":"123","typemoney":"295664"},{"type":3,"typenum":"2419","typemoney":"3000"},{"type":4,"typenum":"73467","typemoney":"200"},{"type":5,"typenum":"1350496","typemoney":"10"},{"type":6,"typenum":"12095581","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026067","detailsLink":"/c/2026/06/14/657550.shtml","videoLink":"/c/2026/06/14/657554.shtml","date":"2026-06-14(日)","week":"日","red":"04,19,27,29,30,32","blue":"13","blue2":"","sales":"414869642","poolmoney":"658469423","content":"辽宁1注，四川1注，贵州1注，共3注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"9130252","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"3","typemoney":"10000000"},{"type":2,"typenum":"89","typemoney":"747481"},{"type":3,"typenum":"973","typemoney":"3000"},{"type":4,"typenum":"56937","typemoney":"200"},{"type":5,"typenum":"1193755","typemoney":"10"},{"type":6,"typenum":"9646709","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026066","detailsLink":"/c/2026/06/11/657331.shtml","videoLink":"/c/2026/06/11/657335.shtml","date":"2026-06-11(四)","week":"四","red":"05,11,21,23,24,29","blue":"16","blue2":"","sales":"392786646","poolmoney":"671837950","content":"内蒙古1注，上海1注，江苏1注，浙江2注，四川1注，云南1注，共7注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"9284771","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"7","typemoney":"6728458"},{"type":2,"typenum":"126","typemoney":"384101"},{"type":3,"typenum":"1292","typemoney":"3000"},{"type":4,"typenum":"68265","typemoney":"200"},{"type":5,"typenum":"1343822","typemoney":"10"},{"type":6,"typenum":"10915668","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026065","detailsLink":"/c/2026/06/09/657117.shtml","videoLink":"/c/2026/06/09/657121.shtml","date":"2026-06-09(二)","week":"二","red":"07,08,16,24,30,32","blue":"02","blue2":"","sales":"386314046","poolmoney":"706837950","content":"内蒙古1注，上海1注，安徽1注，福建1注，云南1注，陕西1注，深圳1注，共7注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"9857903","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"7","typemoney":"6944530"},{"type":2,"typenum":"190","typemoney":"286562"},{"type":3,"typenum":"1222","typemoney":"3000"},{"type":4,"typenum":"68323","typemoney":"200"},{"type":5,"typenum":"1347248","typemoney":"10"},{"type":6,"typenum":"8228543","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026064","detailsLink":"/c/2026/06/07/656903.shtml","videoLink":"/c/2026/06/07/656907.shtml","date":"2026-06-07(日)","week":"日","red":"01,09,15,18,29,33","blue":"15","blue2":"","sales":"427210484","poolmoney":"741837950","content":"天津5注，内蒙古1注，浙江5注，安徽1注，河南1注，广东1注，云南1注，共15注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"11567667","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"15","typemoney":"6021460"},{"type":2,"typenum":"168","typemoney":"364807"},{"type":3,"typenum":"1387","typemoney":"3000"},{"type":4,"typenum":"78426","typemoney":"200"},{"type":5,"typenum":"1528600","typemoney":"10"},{"type":6,"typenum":"7950609","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026063","detailsLink":"/c/2026/06/04/656684.shtml","videoLink":"/c/2026/06/04/656688.shtml","date":"2026-06-04(四)","week":"四","red":"02,08,25,28,30,31","blue":"02","blue2":"","sales":"393294950","poolmoney":"816837950","content":"河北1注，辽宁2注，吉林6注，黑龙江1注，江苏1注，河南2注，广西6注，四川1注，共20注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"本期“一等奖”奖金总额超出1亿元，触发一等奖封顶规定，根据中国福利彩票双色球游戏规则，“一等奖”奖级单注奖金相应调整，调整后金额详见“中奖情况表”。","compLimitInfo":"","fyjCount":"10218082","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"20","typemoney":"5000000"},{"type":2,"typenum":"117","typemoney":"234108"},{"type":3,"typenum":"2107","typemoney":"3000"},{"type":4,"typenum":"98547","typemoney":"200"},{"type":5,"typenum":"1692061","typemoney":"10"},{"type":6,"typenum":"12886954","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026062","detailsLink":"/c/2026/06/02/656270.shtml","videoLink":"/c/2026/06/02/656273.shtml","date":"2026-06-02(二)","week":"二","red":"02,04,07,14,28,29","blue":"09","blue2":"","sales":"402189304","poolmoney":"909990283","content":"北京1注，上海1注，浙江1注，安徽2注，福建1注，山东2注，河南1注，湖北1注，湖南1注，广东6注，广西1注，四川5注，云南4注，陕西1注，新疆1注，深圳1注，共30注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"本期“一等奖”奖金总额超出1亿元，触发一等奖封顶规定，根据中国福利彩票双色球游戏规则，“一等奖”奖级单注奖金相应调整，调整后金额详见“中奖情况表”。","compLimitInfo":"","fyjCount":"10208205","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"30","typemoney":"3333333"},{"type":2,"typenum":"139","typemoney":"6000"},{"type":3,"typenum":"4856","typemoney":"3000"},{"type":4,"typenum":"186149","typemoney":"200"},{"type":5,"typenum":"2632091","typemoney":"10"},{"type":6,"typenum":"27657333","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026061","detailsLink":"/c/2026/05/31/655856.shtml","videoLink":"/c/2026/05/31/655858.shtml","date":"2026-05-31(日)","week":"日","red":"01,04,05,15,23,28","blue":"07","blue2":"","sales":"429422172","poolmoney":"1009990273","content":"江苏1注，福建1注，河南1注，湖北1注，湖南2注，四川1注，贵州1注，共8注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"11334743","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"8","typemoney":"6130798"},{"type":2,"typenum":"135","typemoney":"268041"},{"type":3,"typenum":"1722","typemoney":"3000"},{"type":4,"typenum":"94790","typemoney":"200"},{"type":5,"typenum":"1772167","typemoney":"10"},{"type":6,"typenum":"13333106","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026060","detailsLink":"/c/2026/05/28/655737.shtml","videoLink":"/c/2026/05/28/655741.shtml","date":"2026-05-28(四)","week":"四","red":"07,09,10,16,22,27","blue":"11","blue2":"","sales":"398771788","poolmoney":"1049990273","content":"河北1注，江苏1注，浙江5注，山东1注，河南1注，湖南5注，广西1注，贵州1注，云南1注，宁夏1注，共18注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"11914320","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"18","typemoney":"5502014"},{"type":2,"typenum":"226","typemoney":"159933"},{"type":3,"typenum":"2216","typemoney":"3000"},{"type":4,"typenum":"101083","typemoney":"200"},{"type":5,"typenum":"1778760","typemoney":"10"},{"type":6,"typenum":"9198612","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026059","detailsLink":"/c/2026/05/26/655423.shtml","videoLink":"/c/2026/05/26/655427.shtml","date":"2026-05-26(二)","week":"二","red":"08,16,26,28,29,30","blue":"15","blue2":"","sales":"392773558","poolmoney":"1139990273","content":"安徽1注，云南1注，甘肃1注，共3注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"9432195","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"3","typemoney":"10000000"},{"type":2,"typenum":"138","typemoney":"441123"},{"type":3,"typenum":"1082","typemoney":"3000"},{"type":4,"typenum":"59810","typemoney":"200"},{"type":5,"typenum":"1242643","typemoney":"10"},{"type":6,"typenum":"8313970","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026058","detailsLink":"/c/2026/05/24/655109.shtml","videoLink":"/c/2026/05/24/655113.shtml","date":"2026-05-24(日)","week":"日","red":"01,04,07,21,29,30","blue":"01","blue2":"","sales":"425121686","poolmoney":"1154771516","content":"江苏1注，浙江3注，安徽1注，山东1注，广东1注，广西1注，云南1注，共9注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"9576886","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"9","typemoney":"6504451"},{"type":2,"typenum":"154","typemoney":"351689"},{"type":3,"typenum":"1811","typemoney":"3000"},{"type":4,"typenum":"84493","typemoney":"200"},{"type":5,"typenum":"1486079","typemoney":"10"},{"type":6,"typenum":"11106502","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026057","detailsLink":"/c/2026/05/21/654990.shtml","videoLink":"/c/2026/05/21/654995.shtml","date":"2026-05-21(四)","week":"四","red":"01,10,22,24,28,30","blue":"07","blue2":"","sales":"397400020","poolmoney":"1199771516","content":"河北1注，吉林1注，福建1注，湖北1注，云南1注，陕西1注，共6注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"9020845","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"6","typemoney":"6920687"},{"type":2,"typenum":"109","typemoney":"422903"},{"type":3,"typenum":"1249","typemoney":"3000"},{"type":4,"typenum":"65858","typemoney":"200"},{"type":5,"typenum":"1317985","typemoney":"10"},{"type":6,"typenum":"12380540","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026056","detailsLink":"/c/2026/05/19/654776.shtml","videoLink":"/c/2026/05/19/654780.shtml","date":"2026-05-19(二)","week":"二","red":"10,19,21,22,31,33","blue":"05","blue2":"","sales":"391304582","poolmoney":"1229771516","content":"四川1注，青海1注，共2注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"8801699","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"2","typemoney":"10000000"},{"type":2,"typenum":"86","typemoney":"589039"},{"type":3,"typenum":"1013","typemoney":"3000"},{"type":4,"typenum":"62039","typemoney":"200"},{"type":5,"typenum":"1251026","typemoney":"10"},{"type":6,"typenum":"11290382","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026055","detailsLink":"/c/2026/05/17/654462.shtml","videoLink":"/c/2026/05/17/654466.shtml","date":"2026-05-17(日)","week":"日","red":"04,11,24,25,32,33","blue":"13","blue2":"","sales":"422769486","poolmoney":"1237107160","content":"河北1注，浙江1注，福建1注，共3注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"8807454","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"3","typemoney":"10000000"},{"type":2,"typenum":"155","typemoney":"392861"},{"type":3,"typenum":"1238","typemoney":"3000"},{"type":4,"typenum":"73744","typemoney":"200"},{"type":5,"typenum":"1274943","typemoney":"10"},{"type":6,"typenum":"11158110","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026054","detailsLink":"/c/2026/05/14/654243.shtml","videoLink":"/c/2026/05/14/654247.shtml","date":"2026-05-14(四)","week":"四","red":"13,20,25,29,30,33","blue":"02","blue2":"","sales":"391858874","poolmoney":"1251883761","content":"吉林1注，福建2注，广东2注，共5注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"9199751","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"5","typemoney":"8421032"},{"type":2,"typenum":"67","typemoney":"1021203"},{"type":3,"typenum":"848","typemoney":"3000"},{"type":4,"typenum":"48026","typemoney":"200"},{"type":5,"typenum":"1119488","typemoney":"10"},{"type":6,"typenum":"7428441","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026053","detailsLink":"/c/2026/05/12/653929.shtml","videoLink":"/c/2026/05/12/653933.shtml","date":"2026-05-12(二)","week":"二","red":"01,02,03,08,13,14","blue":"02","blue2":"","sales":"395029142","poolmoney":"1276883761","content":"江苏1注，浙江1注，山东1注，云南1注，新疆2注，共6注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"10368196","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"6","typemoney":"7002350"},{"type":2,"typenum":"136","typemoney":"353355"},{"type":3,"typenum":"1694","typemoney":"3000"},{"type":4,"typenum":"78639","typemoney":"200"},{"type":5,"typenum":"1467666","typemoney":"10"},{"type":6,"typenum":"9233265","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026052","detailsLink":"/c/2026/05/10/653615.shtml","videoLink":"/c/2026/05/10/653619.shtml","date":"2026-05-10(日)","week":"日","red":"01,03,11,22,26,31","blue":"11","blue2":"","sales":"417267288","poolmoney":"1306883761","content":"天津1注，山西1注，辽宁2注，江苏1注，浙江2注，福建1注，山东2注，河南2注，湖北2注，广东3注，广西1注，四川1注，云南1注，陕西1注，甘肃1注，宁夏1注，新疆1注，共24注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"本期“一等奖”奖金总额超出1亿元，触发一等奖封顶规定，根据中国福利彩票双色球游戏规则，“一等奖”奖级单注奖金相应调整，调整后金额详见“中奖情况表”。","compLimitInfo":"","fyjCount":"11172372","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"24","typemoney":"4166666"},{"type":2,"typenum":"257","typemoney":"103058"},{"type":3,"typenum":"2670","typemoney":"3000"},{"type":4,"typenum":"116865","typemoney":"200"},{"type":5,"typenum":"1905046","typemoney":"10"},{"type":6,"typenum":"13011591","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026051","detailsLink":"/c/2026/05/07/653196.shtml","videoLink":"/c/2026/05/07/653199.shtml","date":"2026-05-07(四)","week":"四","red":"09,14,15,16,29,30","blue":"10","blue2":"","sales":"386809756","poolmoney":"1400262206","content":"内蒙古2注，浙江2注，安徽2注，山东1注，广东1注，广西1注，四川1注，云南1注，新疆2注，深圳1注，共14注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"8865908","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"14","typemoney":"5728242"},{"type":2,"typenum":"189","typemoney":"215775"},{"type":3,"typenum":"1646","typemoney":"3000"},{"type":4,"typenum":"81626","typemoney":"200"},{"type":5,"typenum":"1393339","typemoney":"10"},{"type":6,"typenum":"11806730","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026050","detailsLink":"/c/2026/05/05/652982.shtml","videoLink":"/c/2026/05/05/652986.shtml","date":"2026-05-05(二)","week":"二","red":"06,09,25,27,28,30","blue":"03","blue2":"","sales":"368215788","poolmoney":"1470262206","content":"上海1注，浙江1注，河南1注，广东1注，共4注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"9704126","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"4","typemoney":"7220345"},{"type":2,"typenum":"87","typemoney":"408339"},{"type":3,"typenum":"1462","typemoney":"3000"},{"type":4,"typenum":"75625","typemoney":"200"},{"type":5,"typenum":"1451006","typemoney":"10"},{"type":6,"typenum":"10695426","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026049","detailsLink":"/c/2026/05/03/652968.shtml","videoLink":"/c/2026/05/03/652971.shtml","date":"2026-05-03(日)","week":"日","red":"03,04,14,15,18,20","blue":"02","blue2":"","sales":"378548054","poolmoney":"1490262206","content":"山西1注，辽宁1注，黑龙江1注，重庆1注，河南1注，深圳1注，共6注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"8834531","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"6","typemoney":"6941614"},{"type":2,"typenum":"112","typemoney":"416060"},{"type":3,"typenum":"1158","typemoney":"3000"},{"type":4,"typenum":"63374","typemoney":"200"},{"type":5,"typenum":"1251964","typemoney":"10"},{"type":6,"typenum":"10879805","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026048","detailsLink":"/c/2026/04/30/652949.shtml","videoLink":"/c/2026/04/30/652953.shtml","date":"2026-04-30(四)","week":"四","red":"09,15,18,24,28,33","blue":"01","blue2":"","sales":"381163108","poolmoney":"1520262206","content":"共0注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"8625585","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"0","typemoney":"0"},{"type":2,"typenum":"128","typemoney":"473459"},{"type":3,"typenum":"1043","typemoney":"3000"},{"type":4,"typenum":"58802","typemoney":"200"},{"type":5,"typenum":"1172287","typemoney":"10"},{"type":6,"typenum":"8255243","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026047","detailsLink":"/c/2026/04/28/652835.shtml","videoLink":"/c/2026/04/28/652837.shtml","date":"2026-04-28(二)","week":"二","red":"07,16,21,24,27,30","blue":"07","blue2":"","sales":"383992530","poolmoney":"1505111504","content":"江苏1注，湖北1注，湖南2注，广东1注，西藏1注，共6注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"8139029","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"6","typemoney":"6564632"},{"type":2,"typenum":"269","typemoney":"139595"},{"type":3,"typenum":"1784","typemoney":"3000"},{"type":4,"typenum":"82590","typemoney":"200"},{"type":5,"typenum":"1387812","typemoney":"10"},{"type":6,"typenum":"12954820","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026046","detailsLink":"/c/2026/04/26/652421.shtml","videoLink":"/c/2026/04/26/652424.shtml","date":"2026-04-26(日)","week":"日","red":"02,09,10,24,31,33","blue":"16","blue2":"","sales":"425615512","poolmoney":"1535111504","content":"天津1注，上海1注，浙江2注，广东1注，共5注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"本期“二等奖”奖金总额超出7000万元，触发二等奖封顶规定，根据中国福利彩票双色球游戏规则，“二等奖”奖级单注奖金相应调整，调整后金额详见“中奖情况表”。","compLimitInfo":"","fyjCount":"9730481","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"5","typemoney":"8506512"},{"type":2,"typenum":"114","typemoney":"614035"},{"type":3,"typenum":"1354","typemoney":"3000"},{"type":4,"typenum":"65407","typemoney":"200"},{"type":5,"typenum":"1297231","typemoney":"10"},{"type":6,"typenum":"8424133","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026045","detailsLink":"/c/2026/04/23/652302.shtml","videoLink":"/c/2026/04/23/652307.shtml","date":"2026-04-23(四)","week":"四","red":"04,11,15,17,24,30","blue":"15","blue2":"","sales":"395637026","poolmoney":"1559981238","content":"江苏3注，浙江1注，江西2注，广西1注，贵州1注，陕西1注，甘肃2注，新疆1注，共12注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"8702114","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"12","typemoney":"6214166"},{"type":2,"typenum":"131","typemoney":"444885"},{"type":3,"typenum":"1168","typemoney":"3000"},{"type":4,"typenum":"65793","typemoney":"200"},{"type":5,"typenum":"1223184","typemoney":"10"},{"type":6,"typenum":"9721427","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026044","detailsLink":"/c/2026/04/21/651888.shtml","videoLink":"/c/2026/04/21/651892.shtml","date":"2026-04-21(二)","week":"二","red":"02,14,17,18,22,30","blue":"01","blue2":"","sales":"395282770","poolmoney":"1619981238","content":"浙江1注，福建2注，湖南1注，新疆2注，共6注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"8628038","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"6","typemoney":"7298375"},{"type":2,"typenum":"114","typemoney":"483868"},{"type":3,"typenum":"1157","typemoney":"3000"},{"type":4,"typenum":"62051","typemoney":"200"},{"type":5,"typenum":"1231058","typemoney":"10"},{"type":6,"typenum":"10681065","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026043","detailsLink":"/c/2026/04/19/651474.shtml","videoLink":"/c/2026/04/19/651478.shtml","date":"2026-04-19(日)","week":"日","red":"06,09,14,16,25,32","blue":"16","blue2":"","sales":"423102342","poolmoney":"1649981238","content":"江苏2注，安徽1注，福建2注，河南2注，湖南1注，广东1注，四川1注，贵州2注，陕西1注，甘肃1注，新疆1注，深圳1注，共16注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"12328285","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"16","typemoney":"5364612"},{"type":2,"typenum":"262","typemoney":"89065"},{"type":3,"typenum":"2985","typemoney":"3000"},{"type":4,"typenum":"131487","typemoney":"200"},{"type":5,"typenum":"2179884","typemoney":"10"},{"type":6,"typenum":"11891690","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026042","detailsLink":"/c/2026/04/16/651255.shtml","videoLink":"/c/2026/04/16/651259.shtml","date":"2026-04-16(四)","week":"四","red":"02,07,12,19,24,31","blue":"10","blue2":"","sales":"400801534","poolmoney":"1729981238","content":"河北1注，吉林1注，上海1注，江苏1注，安徽1注，广东3注，四川1注，云南4注，西藏1注，共14注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"9543651","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"14","typemoney":"5706863"},{"type":2,"typenum":"350","typemoney":"113098"},{"type":3,"typenum":"2034","typemoney":"3000"},{"type":4,"typenum":"89951","typemoney":"200"},{"type":5,"typenum":"1479315","typemoney":"10"},{"type":6,"typenum":"12061738","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026041","detailsLink":"/c/2026/04/14/651041.shtml","videoLink":"/c/2026/04/14/651044.shtml","date":"2026-04-14(二)","week":"二","red":"02,08,10,17,19,24","blue":"13","blue2":"","sales":"396284492","poolmoney":"1799981238","content":"河北2注，辽宁6注，重庆1注，湖南1注，广东1注，四川1注，陕西1注，深圳1注，共14注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"10858960","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"14","typemoney":"5761961"},{"type":2,"typenum":"171","typemoney":"249531"},{"type":3,"typenum":"1561","typemoney":"3000"},{"type":4,"typenum":"86144","typemoney":"200"},{"type":5,"typenum":"1607878","typemoney":"10"},{"type":6,"typenum":"9711348","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026040","detailsLink":"/c/2026/04/12/650727.shtml","videoLink":"/c/2026/04/12/650731.shtml","date":"2026-04-12(日)","week":"日","red":"03,04,14,22,23,33","blue":"04","blue2":"","sales":"421923472","poolmoney":"1869981238","content":"内蒙古1注，吉林2注，浙江1注，福建1注，山东1注，广东3注，四川2注，云南1注，陕西1注，共13注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"10048696","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"13","typemoney":"6070223"},{"type":2,"typenum":"222","typemoney":"250682"},{"type":3,"typenum":"1686","typemoney":"3000"},{"type":4,"typenum":"78340","typemoney":"200"},{"type":5,"typenum":"1470040","typemoney":"10"},{"type":6,"typenum":"10301621","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026039","detailsLink":"/c/2026/04/09/650608.shtml","videoLink":"/c/2026/04/09/650612.shtml","date":"2026-04-09(四)","week":"四","red":"08,17,18,21,25,30","blue":"05","blue2":"","sales":"393444014","poolmoney":"1934981238","content":"广东1注，共1注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"10612257","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"1","typemoney":"10000000"},{"type":2,"typenum":"173","typemoney":"257555"},{"type":3,"typenum":"1525","typemoney":"3000"},{"type":4,"typenum":"84114","typemoney":"200"},{"type":5,"typenum":"1557295","typemoney":"10"},{"type":6,"typenum":"9411841","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026038","detailsLink":"/c/2026/04/07/650294.shtml","videoLink":"/c/2026/04/07/650298.shtml","date":"2026-04-07(二)","week":"二","red":"01,02,13,23,25,27","blue":"05","blue2":"","sales":"382309000","poolmoney":"1933841973","content":"河北2注，内蒙古2注，黑龙江1注，福建1注，河南1注，湖南1注，共8注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"8247109","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"8","typemoney":"6202609"},{"type":2,"typenum":"139","typemoney":"276859"},{"type":3,"typenum":"1691","typemoney":"3000"},{"type":4,"typenum":"76815","typemoney":"200"},{"type":5,"typenum":"1364152","typemoney":"10"},{"type":6,"typenum":"12782797","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026037","detailsLink":"/c/2026/04/05/650080.shtml","videoLink":"/c/2026/04/05/650082.shtml","date":"2026-04-05(日)","week":"日","red":"11,22,27,29,31,33","blue":"12","blue2":"","sales":"398672542","poolmoney":"1973841973","content":"北京1注，河北10注，山西2注，吉林3注，上海5注，江苏2注，浙江4注，安徽8注，福建6注，江西4注，重庆1注，河南1注，湖北2注，湖南4注，广东6注，广西1注，四川2注，云南3注，陕西2注，甘肃3注，新疆2注，共72注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"本期“一等奖”奖金总额超出1亿元，触发一等奖封顶规定，根据中国福利彩票双色球游戏规则，“一等奖”奖级单注奖金相应调整，调整后金额详见“中奖情况表”。","compLimitInfo":"","fyjCount":"9581318","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"72","typemoney":"1388888"},{"type":2,"typenum":"171","typemoney":"235251"},{"type":3,"typenum":"1521","typemoney":"3000"},{"type":4,"typenum":"85613","typemoney":"200"},{"type":5,"typenum":"1510084","typemoney":"10"},{"type":6,"typenum":"12074320","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026036","detailsLink":"/c/2026/04/02/649861.shtml","videoLink":"/c/2026/04/02/649864.shtml","date":"2026-04-02(四)","week":"四","red":"06,10,12,15,22,28","blue":"08","blue2":"","sales":"398552206","poolmoney":"2063784926","content":"黑龙江1注，上海1注，江苏1注，浙江1注，山东1注，河南1注，广西1注，四川1注，深圳1注，共9注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"9311804","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"9","typemoney":"5684766"},{"type":2,"typenum":"177","typemoney":"139274"},{"type":3,"typenum":"2387","typemoney":"3000"},{"type":4,"typenum":"102004","typemoney":"200"},{"type":5,"typenum":"1653978","typemoney":"10"},{"type":6,"typenum":"14763094","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026035","detailsLink":"/c/2026/03/31/649647.shtml","videoLink":"/c/2026/03/31/649651.shtml","date":"2026-03-31(二)","week":"二","red":"02,06,12,24,25,32","blue":"02","blue2":"","sales":"389527084","poolmoney":"2108784926","content":"山西2注，安徽1注，广东1注，甘肃1注，新疆1注，共6注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"10403306","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"6","typemoney":"7153892"},{"type":2,"typenum":"268","typemoney":"192885"},{"type":3,"typenum":"1524","typemoney":"3000"},{"type":4,"typenum":"75631","typemoney":"200"},{"type":5,"typenum":"1440192","typemoney":"10"},{"type":6,"typenum":"8026970","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026034","detailsLink":"/c/2026/03/29/649434.shtml","videoLink":"/c/2026/03/29/649437.shtml","date":"2026-03-29(日)","week":"日","red":"01,03,07,13,22,23","blue":"07","blue2":"","sales":"425726210","poolmoney":"2138784926","content":"河北1注，山西2注，辽宁1注，浙江1注，山东1注，河南1注，湖北1注，湖南1注，广西1注，海南1注，云南2注，共13注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"9693550","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"13","typemoney":"5653247"},{"type":2,"typenum":"183","typemoney":"185622"},{"type":3,"typenum":"2345","typemoney":"3000"},{"type":4,"typenum":"98149","typemoney":"200"},{"type":5,"typenum":"1647388","typemoney":"10"},{"type":6,"typenum":"14907666","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026033","detailsLink":"/c/2026/03/26/649214.shtml","videoLink":"/c/2026/03/26/649218.shtml","date":"2026-03-26(四)","week":"四","red":"03,06,13,21,28,29","blue":"06","blue2":"","sales":"397739574","poolmoney":"2203784926","content":"天津1注，浙江1注，山东2注，河南11注，共15注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"9541169","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"15","typemoney":"5619305"},{"type":2,"typenum":"161","typemoney":"230797"},{"type":3,"typenum":"1951","typemoney":"3000"},{"type":4,"typenum":"89476","typemoney":"200"},{"type":5,"typenum":"1531415","typemoney":"10"},{"type":6,"typenum":"12335260","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026032","detailsLink":"/c/2026/03/24/649000.shtml","videoLink":"/c/2026/03/24/649004.shtml","date":"2026-03-24(二)","week":"二","red":"01,03,11,18,31,33","blue":"02","blue2":"","sales":"392702390","poolmoney":"2278784926","content":"福建1注，江西3注，重庆1注，四川1注，共6注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"8405080","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"6","typemoney":"7330318"},{"type":2,"typenum":"120","typemoney":"466063"},{"type":3,"typenum":"1083","typemoney":"3000"},{"type":4,"typenum":"79246","typemoney":"200"},{"type":5,"typenum":"1216803","typemoney":"10"},{"type":6,"typenum":"9844600","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026031","detailsLink":"/c/2026/03/22/648686.shtml","videoLink":"/c/2026/03/22/648690.shtml","date":"2026-03-22(日)","week":"日","red":"03,10,12,13,18,33","blue":"08","blue2":"","sales":"430685136","poolmoney":"2308784926","content":"北京1注，江苏1注，浙江3注，江西1注，广东1注，四川2注，深圳1注，共10注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"10923985","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"10","typemoney":"5408805"},{"type":2,"typenum":"99","typemoney":"165174"},{"type":3,"typenum":"2110","typemoney":"3000"},{"type":4,"typenum":"109195","typemoney":"200"},{"type":5,"typenum":"1963952","typemoney":"10"},{"type":6,"typenum":"17633396","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026030","detailsLink":"/c/2026/03/19/648467.shtml","videoLink":"/c/2026/03/19/648472.shtml","date":"2026-03-19(四)","week":"四","red":"10,11,14,19,22,24","blue":"04","blue2":"","sales":"401991268","poolmoney":"2358784926","content":"天津1注，江苏1注，浙江1注，四川1注，陕西1注，共5注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"9820172","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"5","typemoney":"7573704"},{"type":2,"typenum":"86","typemoney":"598535"},{"type":3,"typenum":"1362","typemoney":"3000"},{"type":4,"typenum":"70470","typemoney":"200"},{"type":5,"typenum":"1393800","typemoney":"10"},{"type":6,"typenum":"10282850","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026029","detailsLink":"/c/2026/03/17/648153.shtml","videoLink":"/c/2026/03/17/648157.shtml","date":"2026-03-17(二)","week":"二","red":"06,19,22,23,28,31","blue":"05","blue2":"","sales":"390925844","poolmoney":"2383784926","content":"河北1注，辽宁1注，福建1注，新疆1注，共4注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"8606638","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"4","typemoney":"7239119"},{"type":2,"typenum":"106","typemoney":"337980"},{"type":3,"typenum":"1671","typemoney":"3000"},{"type":4,"typenum":"79570","typemoney":"200"},{"type":5,"typenum":"1418436","typemoney":"10"},{"type":6,"typenum":"13725345","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026028","detailsLink":"/c/2026/03/15/648038.shtml","videoLink":"/c/2026/03/15/648042.shtml","date":"2026-03-15(日)","week":"日","red":"02,06,09,17,25,28","blue":"15","blue2":"","sales":"425241582","poolmoney":"2403784926","content":"河北1注，上海1注，重庆1注，广东1注，宁夏1注，共5注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"10677618","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"5","typemoney":"7757204"},{"type":2,"typenum":"251","typemoney":"219697"},{"type":3,"typenum":"1450","typemoney":"3000"},{"type":4,"typenum":"80527","typemoney":"200"},{"type":5,"typenum":"1534579","typemoney":"10"},{"type":6,"typenum":"10049799","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026027","detailsLink":"/c/2026/03/12/647919.shtml","videoLink":"/c/2026/03/12/647924.shtml","date":"2026-03-12(四)","week":"四","red":"02,13,17,18,25,26","blue":"13","blue2":"","sales":"397777968","poolmoney":"2428784926","content":"辽宁1注，江苏2注，福建2注，重庆1注，河南10注，湖北1注，广东5注，深圳1注，共23注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"本期“一等奖”奖金总额超出1亿元，触发一等奖封顶规定，根据中国福利彩票双色球游戏规则，“一等奖”奖级单注奖金相应调整，调整后金额详见“中奖情况表”。","compLimitInfo":"","fyjCount":"10193620","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"23","typemoney":"4347826"},{"type":2,"typenum":"131","typemoney":"301031"},{"type":3,"typenum":"1920","typemoney":"3000"},{"type":4,"typenum":"89411","typemoney":"200"},{"type":5,"typenum":"1584244","typemoney":"10"},{"type":6,"typenum":"11032927","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026026","detailsLink":"/c/2026/03/10/647605.shtml","videoLink":"/c/2026/03/10/647609.shtml","date":"2026-03-10(二)","week":"二","red":"02,09,16,22,25,29","blue":"03","blue2":"","sales":"377828982","poolmoney":"2518926159","content":"辽宁1注，江苏1注，广东1注，贵州2注，云南1注，陕西1注，共7注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"9497762","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"7","typemoney":"6119470"},{"type":2,"typenum":"168","typemoney":"186578"},{"type":3,"typenum":"1742","typemoney":"3000"},{"type":4,"typenum":"84892","typemoney":"200"},{"type":5,"typenum":"1519236","typemoney":"10"},{"type":6,"typenum":"12213835","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026025","detailsLink":"/c/2026/03/08/647291.shtml","videoLink":"/c/2026/03/08/647295.shtml","date":"2026-03-08(日)","week":"日","red":"02,03,15,20,23,24","blue":"10","blue2":"","sales":"404403816","poolmoney":"2553926159","content":"吉林1注，上海1注，江苏1注，浙江2注，安徽1注，福建1注，共7注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"9198917","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"7","typemoney":"6639739"},{"type":2,"typenum":"184","typemoney":"249525"},{"type":3,"typenum":"1736","typemoney":"3000"},{"type":4,"typenum":"72729","typemoney":"200"},{"type":5,"typenum":"1398175","typemoney":"10"},{"type":6,"typenum":"12207372","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026024","detailsLink":"/c/2026/03/05/647172.shtml","videoLink":"/c/2026/03/05/647176.shtml","date":"2026-03-05(四)","week":"四","red":"01,02,13,21,23,29","blue":"14","blue2":"","sales":"370443834","poolmoney":"2588926159","content":"福建1注，江西1注，共2注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"7168466","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"2","typemoney":"10000000"},{"type":2,"typenum":"79","typemoney":"843179"},{"type":3,"typenum":"798","typemoney":"3000"},{"type":4,"typenum":"43656","typemoney":"200"},{"type":5,"typenum":"918454","typemoney":"10"},{"type":6,"typenum":"8420296","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026023","detailsLink":"/c/2026/03/03/646758.shtml","videoLink":"/c/2026/03/03/646762.shtml","date":"2026-03-03(二)","week":"二","red":"01,03,08,10,23,29","blue":"06","blue2":"","sales":"361967792","poolmoney":"2592273374","content":"上海2注，河南1注，湖北1注，广东1注，陕西1注，甘肃5注，深圳1注，共12注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"8789417","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"12","typemoney":"5612828"},{"type":2,"typenum":"133","typemoney":"221171"},{"type":3,"typenum":"1756","typemoney":"3000"},{"type":4,"typenum":"83312","typemoney":"200"},{"type":5,"typenum":"1444986","typemoney":"10"},{"type":6,"typenum":"12053436","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026022","detailsLink":"/c/2026/03/01/646444.shtml","videoLink":"/c/2026/03/01/646448.shtml","date":"2026-03-01(日)","week":"日","red":"15,18,23,25,28,32","blue":"11","blue2":"","sales":"380507698","poolmoney":"2652273374","content":"吉林2注，安徽1注，湖北1注，四川2注，共6注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"8878141","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"6","typemoney":"6366973"},{"type":2,"typenum":"152","typemoney":"215837"},{"type":3,"typenum":"1815","typemoney":"3000"},{"type":4,"typenum":"84133","typemoney":"200"},{"type":5,"typenum":"1463793","typemoney":"10"},{"type":6,"typenum":"12827869","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026021","detailsLink":"/c/2026/02/26/646225.shtml","videoLink":"/c/2026/02/26/646230.shtml","date":"2026-02-26(四)","week":"四","red":"03,13,25,26,30,31","blue":"04","blue2":"","sales":"351619166","poolmoney":"2682273374","content":"天津1注，吉林1注，浙江2注，江西1注，广西1注，共6注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"8067454","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"6","typemoney":"7076614"},{"type":2,"typenum":"113","typemoney":"441050"},{"type":3,"typenum":"1114","typemoney":"3000"},{"type":4,"typenum":"60760","typemoney":"200"},{"type":5,"typenum":"1146956","typemoney":"10"},{"type":6,"typenum":"8538823","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026020","detailsLink":"/c/2026/02/24/646011.shtml","videoLink":"/c/2026/02/24/646015.shtml","date":"2026-02-24(二)","week":"二","red":"01,13,14,21,24,30","blue":"02","blue2":"","sales":"381989060","poolmoney":"2712273374","content":"河南1注，甘肃1注，共2注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"7595784","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"2","typemoney":"10000000"},{"type":2,"typenum":"64","typemoney":"994080"},{"type":3,"typenum":"974","typemoney":"3000"},{"type":4,"typenum":"50504","typemoney":"200"},{"type":5,"typenum":"1022416","typemoney":"10"},{"type":6,"typenum":"9284458","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026019","detailsLink":"/c/2026/02/12/645597.shtml","videoLink":"/c/2026/02/12/645601.shtml","date":"2026-02-12(四)","week":"四","red":"07,08,16,17,18,30","blue":"01","blue2":"","sales":"428387634","poolmoney":"2716368081","content":"黑龙江1注，浙江1注，山东5注，共7注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"11157540","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"7","typemoney":"6673652"},{"type":2,"typenum":"220","typemoney":"213010"},{"type":3,"typenum":"1747","typemoney":"3000"},{"type":4,"typenum":"88928","typemoney":"200"},{"type":5,"typenum":"1634472","typemoney":"10"},{"type":6,"typenum":"11234617","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026018","detailsLink":"/c/2026/02/10/645283.shtml","videoLink":"/c/2026/02/10/645288.shtml","date":"2026-02-10(二)","week":"二","red":"11,15,17,22,25,30","blue":"07","blue2":"","sales":"365733450","poolmoney":"2751368081","content":"内蒙古1注，上海1注，浙江1注，重庆1注，四川1注，云南1注，共6注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"8041310","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"6","typemoney":"5577851"},{"type":2,"typenum":"82","typemoney":"169127"},{"type":3,"typenum":"2193","typemoney":"3000"},{"type":4,"typenum":"102130","typemoney":"200"},{"type":5,"typenum":"1589402","typemoney":"10"},{"type":6,"typenum":"15753655","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026017","detailsLink":"/c/2026/02/08/644869.shtml","videoLink":"/c/2026/02/08/644873.shtml","date":"2026-02-08(日)","week":"日","red":"01,03,05,18,29,32","blue":"04","blue2":"","sales":"387896530","poolmoney":"2781368081","content":"天津1注，河北1注，山西1注，江苏1注，安徽1注，湖南1注，共6注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"10295180","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"6","typemoney":"6934706"},{"type":2,"typenum":"130","typemoney":"357176"},{"type":3,"typenum":"1302","typemoney":"3000"},{"type":4,"typenum":"72114","typemoney":"200"},{"type":5,"typenum":"1456447","typemoney":"10"},{"type":6,"typenum":"9531785","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026016","detailsLink":"/c/2026/02/05/644750.shtml","videoLink":"/c/2026/02/05/644754.shtml","date":"2026-02-05(四)","week":"四","red":"04,05,09,10,27,30","blue":"13","blue2":"","sales":"364669398","poolmoney":"2811368081","content":"河北1注，浙江1注，安徽1注，山东1注，河南2注，四川1注，深圳1注，共8注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"11672262","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"8","typemoney":"5687274"},{"type":2,"typenum":"247","typemoney":"89039"},{"type":3,"typenum":"2081","typemoney":"3000"},{"type":4,"typenum":"107626","typemoney":"200"},{"type":5,"typenum":"1834313","typemoney":"10"},{"type":6,"typenum":"9344881","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026015","detailsLink":"/c/2026/02/03/644336.shtml","videoLink":"/c/2026/02/03/644340.shtml","date":"2026-02-03(二)","week":"二","red":"07,10,13,22,27,31","blue":"12","blue2":"","sales":"359738534","poolmoney":"2851368081","content":"浙江2注，湖北1注，贵州1注，新疆1注，共5注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"8136202","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"5","typemoney":"7580431"},{"type":2,"typenum":"148","typemoney":"348706"},{"type":3,"typenum":"1224","typemoney":"3000"},{"type":4,"typenum":"61054","typemoney":"200"},{"type":5,"typenum":"1173078","typemoney":"10"},{"type":6,"typenum":"8693301","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026014","detailsLink":"/c/2026/02/01/644022.shtml","videoLink":"/c/2026/02/01/644026.shtml","date":"2026-02-01(日)","week":"日","red":"07,13,19,22,26,32","blue":"01","blue2":"","sales":"386492580","poolmoney":"2876368081","content":"北京1注，辽宁2注，吉林1注，上海1注，安徽1注，广东11注，共17注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"本期“一等奖”奖金总额超出1亿元，触发一等奖封顶规定，根据中国福利彩票双色球游戏规则，“一等奖”奖级单注奖金相应调整，调整后金额详见“中奖情况表”。","compLimitInfo":"","fyjCount":"9373173","fyjMoney":"5","prizegrades":[{"type":1,"typenum":"17","typemoney":"5882352"},{"type":2,"typenum":"201","typemoney":"299554"},{"type":3,"typenum":"1062","typemoney":"3000"},{"type":4,"typenum":"61368","typemoney":"200"},{"type":5,"typenum":"1232531","typemoney":"10"},{"type":6,"typenum":"7893509","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026013","detailsLink":"/c/2026/01/29/643803.shtml","videoLink":"/c/2026/01/29/643807.shtml","date":"2026-01-29(四)","week":"四","red":"04,09,12,13,16,20","blue":"01","blue2":"","sales":"380549690","poolmoney":"2961315457","content":"重庆1注，广东1注，四川1注，云南1注，新疆1注，共5注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"5","typemoney":"9433203"},{"type":2,"typenum":"103","typemoney":"269005"},{"type":3,"typenum":"1162","typemoney":"3000"},{"type":4,"typenum":"62845","typemoney":"200"},{"type":5,"typenum":"1265780","typemoney":"10"},{"type":6,"typenum":"9385294","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026012","detailsLink":"/c/2026/01/27/643389.shtml","videoLink":"/c/2026/01/27/643393.shtml","date":"2026-01-27(二)","week":"二","red":"03,05,07,16,20,24","blue":"08","blue2":"","sales":"358422924","poolmoney":"2925358915","content":"河北1注，安徽1注，山东2注，云南4注，共8注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"8","typemoney":"6799445"},{"type":2,"typenum":"65","typemoney":"276837"},{"type":3,"typenum":"1940","typemoney":"3000"},{"type":4,"typenum":"87635","typemoney":"200"},{"type":5,"typenum":"1462672","typemoney":"10"},{"type":6,"typenum":"13135136","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026011","detailsLink":"/c/2026/01/25/643075.shtml","videoLink":"/c/2026/01/25/643079.shtml","date":"2026-01-25(日)","week":"日","red":"02,03,04,20,31,32","blue":"04","blue2":"","sales":"394441490","poolmoney":"2925771107","content":"江苏1注，广东1注，广西1注，共3注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"3","typemoney":"10000000"},{"type":2,"typenum":"77","typemoney":"388911"},{"type":3,"typenum":"1121","typemoney":"3000"},{"type":4,"typenum":"56163","typemoney":"200"},{"type":5,"typenum":"1151825","typemoney":"10"},{"type":6,"typenum":"9475525","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026010","detailsLink":"/c/2026/01/22/642856.shtml","videoLink":"/c/2026/01/22/642860.shtml","date":"2026-01-22(四)","week":"四","red":"04,09,10,15,19,26","blue":"12","blue2":"","sales":"358486254","poolmoney":"2865932466","content":"山西2注，辽宁4注，黑龙江1注，浙江2注，福建1注，山东1注，广东1注，云南2注，甘肃2注，宁夏1注，新疆2注，共19注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"19","typemoney":"5702151"},{"type":2,"typenum":"223","typemoney":"74780"},{"type":3,"typenum":"6037","typemoney":"3000"},{"type":4,"typenum":"119377","typemoney":"200"},{"type":5,"typenum":"1868556","typemoney":"10"},{"type":6,"typenum":"9656381","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026009","detailsLink":"/c/2026/01/20/642442.shtml","videoLink":"/c/2026/01/20/642446.shtml","date":"2026-01-20(二)","week":"二","red":"03,06,13,19,23,25","blue":"10","blue2":"","sales":"347159860","poolmoney":"2924245047","content":"河北1注，山西1注，内蒙古2注，山东1注，广西1注，四川1注，贵州1注，宁夏1注，共9注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"9","typemoney":"6911676"},{"type":2,"typenum":"276","typemoney":"77921"},{"type":3,"typenum":"2291","typemoney":"3000"},{"type":4,"typenum":"98381","typemoney":"200"},{"type":5,"typenum":"1549642","typemoney":"10"},{"type":6,"typenum":"8407453","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026008","detailsLink":"/c/2026/01/18/642228.shtml","videoLink":"/c/2026/01/18/642232.shtml","date":"2026-01-18(日)","week":"日","red":"06,09,16,27,31,33","blue":"10","blue2":"","sales":"388652642","poolmoney":"2921931052","content":"河北2注，重庆1注，湖北1注，湖南1注，宁夏1注，共6注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"6","typemoney":"8725252"},{"type":2,"typenum":"107","typemoney":"261115"},{"type":3,"typenum":"1272","typemoney":"3000"},{"type":4,"typenum":"70493","typemoney":"200"},{"type":5,"typenum":"1403571","typemoney":"10"},{"type":6,"typenum":"9346383","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026007","detailsLink":"/c/2026/01/15/642009.shtml","videoLink":"/c/2026/01/15/642013.shtml","date":"2026-01-15(四)","week":"四","red":"09,13,19,27,29,30","blue":"01","blue2":"","sales":"360236814","poolmoney":"2890464389","content":"辽宁1注，黑龙江1注，浙江1注，安徽1注，河南1注，湖南1注，陕西1注，共7注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"7","typemoney":"7349262"},{"type":2,"typenum":"149","typemoney":"137960"},{"type":3,"typenum":"1663","typemoney":"3000"},{"type":4,"typenum":"91655","typemoney":"200"},{"type":5,"typenum":"1684901","typemoney":"10"},{"type":6,"typenum":"10824567","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026006","detailsLink":"/c/2026/01/13/641295.shtml","videoLink":"/c/2026/01/13/641299.shtml","date":"2026-01-13(二)","week":"二","red":"02,06,22,23,24,28","blue":"15","blue2":"","sales":"352228044","poolmoney":"2880241083","content":"山东2注，共2注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"2","typemoney":"10000000"},{"type":2,"typenum":"147","typemoney":"178496"},{"type":3,"typenum":"1153","typemoney":"3000"},{"type":4,"typenum":"68159","typemoney":"200"},{"type":5,"typenum":"1347562","typemoney":"10"},{"type":6,"typenum":"7413886","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026005","detailsLink":"/c/2026/01/11/640981.shtml","videoLink":"/c/2026/01/11/640984.shtml","date":"2026-01-11(日)","week":"日","red":"01,20,22,27,30,33","blue":"10","blue2":"","sales":"387903486","poolmoney":"2821524165","content":"浙江1注，重庆1注，广东1注，云南1注，共4注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"4","typemoney":"10000000"},{"type":2,"typenum":"66","typemoney":"400264"},{"type":3,"typenum":"1181","typemoney":"3000"},{"type":4,"typenum":"60182","typemoney":"200"},{"type":5,"typenum":"1198076","typemoney":"10"},{"type":6,"typenum":"11368542","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026004","detailsLink":"/c/2026/01/08/640762.shtml","videoLink":"/c/2026/01/08/640766.shtml","date":"2026-01-08(四)","week":"四","red":"03,07,08,09,18,32","blue":"10","blue2":"","sales":"361167416","poolmoney":"2782271788","content":"浙江2注，湖南1注，新疆1注，共4注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"4","typemoney":"8704419"},{"type":2,"typenum":"128","typemoney":"144703"},{"type":3,"typenum":"1988","typemoney":"3000"},{"type":4,"typenum":"104550","typemoney":"200"},{"type":5,"typenum":"1818555","typemoney":"10"},{"type":6,"typenum":"11564820","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026003","detailsLink":"/c/2026/01/06/640648.shtml","videoLink":"/c/2026/01/06/640652.shtml","date":"2026-01-06(二)","week":"二","red":"05,06,09,21,28,30","blue":"16","blue2":"","sales":"352267432","poolmoney":"2761523177","content":"重庆1注，四川1注，甘肃1注，共3注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"3","typemoney":"10000000"},{"type":2,"typenum":"130","typemoney":"190247"},{"type":3,"typenum":"1045","typemoney":"3000"},{"type":4,"typenum":"65427","typemoney":"200"},{"type":5,"typenum":"1295963","typemoney":"10"},{"type":6,"typenum":"8900442","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026002","detailsLink":"/c/2026/01/04/640434.shtml","videoLink":"/c/2026/01/04/640436.shtml","date":"2026-01-04(日)","week":"日","red":"01,05,07,18,30,32","blue":"02","blue2":"","sales":"377330734","poolmoney":"2717326577","content":"上海2注，江苏1注，浙江1注，福建1注，山东1注，河南1注，湖北2注，广东2注，甘肃1注，共12注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"12","typemoney":"6797096"},{"type":2,"typenum":"119","typemoney":"226524"},{"type":3,"typenum":"1392","typemoney":"3000"},{"type":4,"typenum":"76551","typemoney":"200"},{"type":5,"typenum":"1548629","typemoney":"10"},{"type":6,"typenum":"8418758","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2026001","detailsLink":"/c/2026/01/01/640315.shtml","videoLink":"/c/2026/01/01/640319.shtml","date":"2026-01-01(四)","week":"四","red":"02,06,11,12,13,33","blue":"15","blue2":"","sales":"348080190","poolmoney":"2718022399","content":"河北1注，上海2注，江苏1注，共4注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"4","typemoney":"9520395"},{"type":2,"typenum":"154","typemoney":"146766"},{"type":3,"typenum":"1440","typemoney":"3000"},{"type":4,"typenum":"69624","typemoney":"200"},{"type":5,"typenum":"1298354","typemoney":"10"},{"type":6,"typenum":"9784609","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2025151","detailsLink":"/c/2025/12/30/640201.shtml","videoLink":"/c/2025/12/30/640203.shtml","date":"2025-12-30(二)","week":"二","red":"08,09,14,22,28,30","blue":"04","blue2":"","sales":"369383528","poolmoney":"2688298050","content":"内蒙古1注，辽宁1注，上海1注，安徽1注，河南1注，新疆1注，共6注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"6","typemoney":"7732391"},{"type":2,"typenum":"125","typemoney":"163943"},{"type":3,"typenum":"1895","typemoney":"3000"},{"type":4,"typenum":"86417","typemoney":"200"},{"type":5,"typenum":"1586463","typemoney":"10"},{"type":6,"typenum":"12038628","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2025150","detailsLink":"/c/2025/12/28/639987.shtml","videoLink":"/c/2025/12/28/639991.shtml","date":"2025-12-28(日)","week":"日","red":"06,13,17,19,24,31","blue":"08","blue2":"","sales":"388447078","poolmoney":"2673213583","content":"浙江2注，安徽1注，福建1注，广西1注，云南2注，共7注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"7","typemoney":"7756937"},{"type":2,"typenum":"208","typemoney":"115976"},{"type":3,"typenum":"1622","typemoney":"3000"},{"type":4,"typenum":"86807","typemoney":"200"},{"type":5,"typenum":"1551399","typemoney":"10"},{"type":6,"typenum":"11220972","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2025149","detailsLink":"/c/2025/12/25/639868.shtml","videoLink":"/c/2025/12/25/639871.shtml","date":"2025-12-25(四)","week":"四","red":"01,02,04,06,22,30","blue":"10","blue2":"","sales":"355328424","poolmoney":"2655142533","content":"北京1注，河北6注，辽宁1注，浙江1注，安徽1注，山东2注，云南1注，共13注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"13","typemoney":"6418616"},{"type":2,"typenum":"130","typemoney":"177327"},{"type":3,"typenum":"1280","typemoney":"3000"},{"type":4,"typenum":"68720","typemoney":"200"},{"type":5,"typenum":"1336474","typemoney":"10"},{"type":6,"typenum":"10190425","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2025148","detailsLink":"/c/2025/12/23/639654.shtml","videoLink":"/c/2025/12/23/639658.shtml","date":"2025-12-23(二)","week":"二","red":"03,04,09,10,15,22","blue":"16","blue2":"","sales":"353582370","poolmoney":"2669426999","content":"北京1注，河北2注，山西1注，辽宁1注，上海2注，江苏1注，共8注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"8","typemoney":"7480485"},{"type":2,"typenum":"139","typemoney":"178452"},{"type":3,"typenum":"1239","typemoney":"3000"},{"type":4,"typenum":"71531","typemoney":"200"},{"type":5,"typenum":"1395510","typemoney":"10"},{"type":6,"typenum":"8411527","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2025147","detailsLink":"/c/2025/12/21/639440.shtml","videoLink":"/c/2025/12/21/639444.shtml","date":"2025-12-21(日)","week":"日","red":"01,03,05,08,22,33","blue":"08","blue2":"","sales":"392695744","poolmoney":"2654856315","content":"山西1注，内蒙古2注，江苏1注，福建3注，江西10注，山东1注，广东1注，四川1注，贵州1注，共21注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"21","typemoney":"5719540"},{"type":2,"typenum":"118","typemoney":"160067"},{"type":3,"typenum":"2089","typemoney":"3000"},{"type":4,"typenum":"96407","typemoney":"200"},{"type":5,"typenum":"1636309","typemoney":"10"},{"type":6,"typenum":"14991537","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]},{"name":"双色球","code":"2025146","detailsLink":"/c/2025/12/18/639321.shtml","videoLink":"/c/2025/12/18/639325.shtml","date":"2025-12-18(四)","week":"四","red":"05,07,12,24,26,28","blue":"02","blue2":"","sales":"365633358","poolmoney":"2718302859","content":"辽宁1注，吉林1注，浙江2注，安徽1注，江西1注，山东1注，广东1注，陕西1注，共9注。","addmoney":"","addmoney2":"","msg":"","z2add":"","m2add":"","specialRuleInfo":"","prizeSpecialInfo":"","compLimitInfo":"","fyjCount":"","fyjMoney":"","prizegrades":[{"type":1,"typenum":"9","typemoney":"7076977"},{"type":2,"typenum":"192","typemoney":"121697"},{"type":3,"typenum":"1652","typemoney":"3000"},{"type":4,"typenum":"83020","typemoney":"200"},{"type":5,"typenum":"1535060","typemoney":"10"},{"type":6,"typenum":"9757151","typemoney":"5"},{"type":7,"typenum":"","typemoney":""}]}]};
+/* ============================================================
+ * 双色球助手 (SSQ Helper)
+ * 1) 百期趋势追踪：每个红球/蓝球号码在历史窗口中的出现次数、频率、
+ *    遗漏、热度状态、走势图、热力图
+ * 2) 智能预测：基于 频率 + 近期衰减 + 遗漏回补 三信号的加权评分模型
+ *    （纯统计娱乐算法，不改变随机本质）
+ * 3) 选号生成：纯随机 / 双色球胆拖规则（胆码+拖码+蓝球）
+ * ============================================================ */
+"use strict";
+
+const RAW_DATA = (typeof EMBEDDED_DATA !== "undefined") ? EMBEDDED_DATA : null;
+let DRAW_DATA = normalize(RAW_DATA);
+
+/* ---------------- 数据规范化 ---------------- */
+function normalize(raw) {
+  let list = null;
+  if (raw && Array.isArray(raw)) list = raw;
+  else if (raw && Array.isArray(raw.result)) list = raw.result;
+  if (!list) return [];
+  const out = [];
+  for (const d of list) {
+    const red = String(d.red != null ? d.red : "")
+      .split(",").map(s => parseInt(s, 10))
+      .filter(n => Number.isInteger(n) && n >= 1 && n <= 33);
+    const blue = parseInt(d.blue, 10);
+    if (red.length !== 6 || !(blue >= 1 && blue <= 16)) continue;
+    out.push({
+      issue: String(d.code != null ? d.code : (d.issue || "")),
+      date: String(d.date || "").replace(/\(.*\)$/, ""),
+      red, blue
+    });
+  }
+  out.reverse(); // 接口最新在前 → 转为时间正序
+  return out;
+}
+
+/* ---------------- 统计核心 ---------------- */
+function computeStats(draws, windowSize) {
+  const W = Math.min(windowSize, draws.length);
+  const win = draws.slice(-W);
+  const red = Array.from({ length: 33 }, (_, i) => ({ n: i + 1, cnt: 0, last10: 0, prev10: 0 }));
+  const blue = Array.from({ length: 16 }, (_, i) => ({ n: i + 1, cnt: 0, last10: 0, prev10: 0 }));
+  const redHit = Array.from({ length: 33 }, () => new Array(W).fill(0));
+  const blueHit = Array.from({ length: 16 }, () => new Array(W).fill(0));
+
+  win.forEach((d, di) => {
+    for (const n of d.red) { red[n - 1].cnt++; redHit[n - 1][di] = 1; }
+    blue[d.blue - 1].cnt++; blueHit[d.blue - 1][di] = 1;
+  });
+
+  const l10 = Math.min(10, W);
+  win.slice(-l10).forEach(d => {
+    for (const n of d.red) red[n - 1].last10++;
+    blue[d.blue - 1].last10++;
+  });
+  if (W >= 20) {
+    win.slice(-20, -10).forEach(d => {
+      for (const n of d.red) red[n - 1].prev10++;
+      blue[d.blue - 1].prev10++;
+    });
+  } else {
+    red.forEach(r => r.prev10 = r.cnt - r.last10);
+    blue.forEach(b => b.prev10 = b.cnt - b.last10);
+  }
+
+  const DECAY = 0.92; // 近期权重衰减因子
+  const zscore = arr => {
+    const m = arr.reduce((a, x) => a + x, 0) / arr.length;
+    const s = Math.sqrt(arr.reduce((a, x) => a + (x - m) * (x - m), 0) / arr.length) || 1;
+    return arr.map(x => (x - m) / s);
+  };
+
+  const analyze = (arr, hit, isRed) => {
+    const mean = isRed ? 6 * W / 33 : W / 16;
+    const sd = Math.sqrt((isRed ? 6 * W : W) * (1 / (isRed ? 33 : 16)) * (1 - 1 / (isRed ? 33 : 16)));
+    const rec = hit.map((row, i) => {
+      let s = 0;
+      for (let di = 0; di < W; di++) s += row[di] * Math.pow(DECAY, W - 1 - di);
+      return s;
+    });
+    const recZ = zscore(rec);
+    const gap = hit.map(row => { // 当前遗漏：从最后一期往前连续未出期数
+      let g = 0;
+      for (let di = W - 1; di >= 0 && row[di] === 0; di--) g++;
+      return g;
+    });
+    const maxGap = hit.map(row => {
+      let m = 0, c = 0;
+      for (let di = 0; di < W; di++) { c = row[di] === 0 ? c + 1 : 0; if (c > m) m = c; }
+      return m;
+    });
+    const ratio = arr.map((it, i) => {
+      const avg = it.cnt > 0 ? W / it.cnt : W + 1;
+      return (gap[i] + 0.5) / (avg + 0.5);
+    });
+    const ratioZ = zscore(ratio);
+    arr.forEach((it, i) => {
+      const z = (it.cnt - mean) / sd;
+      it.freq = it.cnt / (isRed ? 6 * W : W);
+      it.zFreq = z;
+      it.rec = recZ[i];
+      it.gap = gap[i];
+      it.maxGap = maxGap[i];
+      it.avgGap = it.cnt > 0 ? W / it.cnt : W + 1;
+      it.ratioZ = ratioZ[i];
+      it.status = z > 0.5 ? "hot" : z < -0.5 ? "cold" : "warm";
+      it.trend = it.last10 > it.prev10 ? "up" : it.last10 < it.prev10 ? "down" : "flat";
+      it.lastIssue = "—";
+      for (let di = W - 1; di >= 0; di--) {
+        if (hit[i][di] === 1) { it.lastIssue = win[di].issue; break; }
+      }
+    });
+  };
+  analyze(red, redHit, true);
+  analyze(blue, blueHit, false);
+
+  return {
+    windowSize: W,
+    draws: win,
+    red, blue,
+    latest: win[W - 1],
+    statsText: `窗口 ${W} 期：红球合计 ${red.reduce((a, r) => a + r.cnt, 0)} 次（理论均次 ${(6 * W / 33).toFixed(1)}），蓝球合计 ${blue.reduce((a, b) => a + b.cnt, 0)} 次`
+  };
+}
+
+/* ---------------- 预测算法 ---------------- */
+const PRESETS = {
+  balanced: { label: "均衡混合", w: { freq: 0.40, rec: 0.30, gap: 0.30 } },
+  cold:     { label: "冷号回补", w: { freq: 0.15, rec: 0.10, gap: 0.75 } },
+  hot:      { label: "热号延续", w: { freq: 0.60, rec: 0.35, gap: 0.05 } }
+};
+
+function softmax(arr) {
+  const m = Math.max(...arr);
+  const ex = arr.map(x => Math.exp(x - m));
+  const s = ex.reduce((a, x) => a + x, 0);
+  return ex.map(x => x / s);
+}
+
+function predict(stats, presetKey) {
+  const p = PRESETS[presetKey] || PRESETS.balanced;
+  const score = (item, get) => item.map(it =>
+    p.w.freq * it.zFreq + p.w.rec * it.rec + p.w.gap * it.ratioZ
+  );
+  const redP = softmax(score(stats.red));
+  const blueP = softmax(score(stats.blue));
+  const redOut = stats.red.map((r, i) => ({
+    n: r.n, p: redP[i], exp: 6 * redP[i],
+    zFreq: r.zFreq, zRec: r.rec, zGap: r.ratioZ
+  })).sort((a, b) => b.p - a.p);
+  const blueOut = stats.blue.map((b, i) => ({
+    n: b.n, p: blueP[i],
+    zFreq: b.zFreq, zRec: b.rec, zGap: b.ratioZ
+  })).sort((a, b) => b.p - a.p);
+  return {
+    model: p.label,
+    red: redOut,
+    blue: blueOut,
+    rec: {
+      red: redOut.slice(0, 6).map(x => x.n).sort((a, b) => a - b),
+      blue: blueOut[0].n,
+      blueAlt: blueOut.slice(0, 3).map(x => x.n)
+    }
+  };
+}
+
+function simulateWeighted(pool, k, weights) {
+  const items = pool.map((v, i) => ({ v, w: Math.max(weights[i], 1e-9) }));
+  const out = [];
+  for (let s = 0; s < k; s++) {
+    const total = items.reduce((a, x) => a + x.w, 0);
+    let r = Math.random() * total, idx = 0;
+    for (let i = 0; i < items.length; i++) {
+      r -= items[i].w;
+      if (r <= 0) { idx = i; break; }
+    }
+    out.push(items[idx].v);
+    items.splice(idx, 1);
+  }
+  return out;
+}
+
+/* ---------------- 组合数学 ---------------- */
+function cnk(n, k) {
+  if (k < 0 || k > n) return 0;
+  k = Math.min(k, n - k);
+  let r = 1;
+  for (let i = 0; i < k; i++) r = r * (n - i) / (i + 1);
+  return Math.round(r);
+}
+
+function* combos(arr, k) {
+  if (k === 0) { yield []; return; }
+  for (let i = 0; i <= arr.length - k; i++) {
+    for (const rest of combos(arr.slice(i + 1), k - 1)) {
+      yield [arr[i]].concat(rest);
+    }
+  }
+}
+
+/* ---------------- 选号生成 ---------------- */
+function genRandom(n) {
+  const nums = Array.from({ length: 33 }, (_, i) => i + 1);
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const red = simulateWeighted(nums, 6, nums.map(() => 1)).sort((a, b) => a - b);
+    out.push({ red, blue: 1 + Math.floor(Math.random() * 16) });
+  }
+  return out;
+}
+
+function genDanTuo(dan, tuo, blues, opts) {
+  const d = dan.length, t = tuo.length, b = blues.length;
+  const need = 6 - d;
+  if (!(d >= 1 && d <= 5)) return { error: "胆码数量需为 1–5 个" };
+  if (t < need) return { error: `拖码至少需要 ${need} 个（当前 ${t} 个）` };
+  if (b < 1) return { error: "请至少选择 1 个蓝球" };
+  const total = cnk(t, need) * b;
+  const wantAll = opts && opts.all;
+  const sampleN = opts && opts.n ? opts.n : 0;
+
+  if (wantAll) {
+    const MAX = 5000;
+    const list = [];
+    for (const drag of combos(tuo, need)) {
+      for (const bl of blues) {
+        if (list.length >= MAX) break;
+        list.push({ red: dan.concat(drag).sort((a, b) => a - b), blue: bl });
+      }
+      if (list.length >= MAX) break;
+    }
+    return { ok: true, total, limited: total > MAX, list };
+  }
+
+  // 随机抽取不重复组合
+  const set = new Set();
+  const list = [];
+  const n = Math.min(sampleN, total);
+  let guard = 0;
+  while (list.length < n && guard < n * 200 + 500) {
+    guard++;
+    const drag = simulateWeighted(tuo, need, tuo.map(() => 1)).sort((a, b) => a - b);
+    const bl = blues[Math.floor(Math.random() * b)];
+    const key = drag.join(",") + "|" + bl;
+    if (set.has(key)) continue;
+    set.add(key);
+    list.push({ red: dan.concat(drag).sort((a, b) => a - b), blue: bl });
+  }
+  return { ok: true, total, limited: false, list };
+}
+
+/* ---------------- DOM 工具 ---------------- */
+const $ = id => document.getElementById(id);
+function el(tag, attrs, children) {
+  const node = document.createElement(tag);
+  if (attrs) for (const k in attrs) {
+    if (k === "class") node.className = attrs[k];
+    else if (k === "text") node.textContent = attrs[k];
+    else if (k === "html") node.innerHTML = attrs[k];
+    else if (k.startsWith("on")) node.addEventListener(k.slice(2), attrs[k]);
+    else node.setAttribute(k, attrs[k]);
+  }
+  (children || []).forEach(c => node.appendChild(c));
+  return node;
+}
+
+/* ---------------- 画布绘图 ---------------- */
+function setupCanvas(canvas, h) {
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth || canvas.parentElement.clientWidth || 640;
+  canvas.width = Math.max(1, Math.round(w * dpr));
+  canvas.height = Math.round(h * dpr);
+  canvas.style.height = h + "px";
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  return { ctx, w, h };
+}
+
+function drawBars(canvas, items, labelEvery, colors) {
+  const { ctx, w, h } = setupCanvas(canvas, canvas.getAttribute("data-h") || 230);
+  const pad = { t: 8, r: 4, b: 24, l: 36 };
+  const iw = w - pad.l - pad.r, ih = h - pad.t - pad.b;
+  const max = Math.max.apply(null, items.map(i => i.val)) || 1;
+  const n = items.length, bw = iw / n;
+  ctx.strokeStyle = "#eef1f6"; ctx.fillStyle = "#9aa5b5"; ctx.font = "10px sans-serif";
+  ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  for (let g = 0; g <= 4; g++) {
+    const y = pad.t + ih - ih * g / 4;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+    ctx.fillText(String(Math.round(max * g / 4)), pad.l - 5, y);
+  }
+  items.forEach((it, i) => {
+    const v = it.val / max;
+    const x = pad.l + i * bw, y = pad.t + ih * (1 - v);
+    const bw2 = bw * 0.72;
+    ctx.fillStyle = colors ? colors[i] : "#b9c2d0";
+    ctx.fillRect(x + bw / 2 - bw2 / 2, y, bw2, pad.t + ih - y);
+    if (i % labelEvery === 0 || i === n - 1) {
+      ctx.fillStyle = "#9aa5b5"; ctx.textAlign = "center"; ctx.textBaseline = "top";
+      ctx.fillText(String(it.n), x + bw / 2, h - 18);
+    }
+  });
+  canvas._meta = { n, bw, padL: pad.l };
+}
+
+function drawLine(canvas, labels, values, color) {
+  const { ctx, w, h } = setupCanvas(canvas, canvas.getAttribute("data-h") || 220);
+  const pad = { t: 10, r: 10, b: 24, l: 36 };
+  const iw = w - pad.l - pad.r, ih = h - pad.t - pad.b;
+  const min = Math.min.apply(null, values.concat([0]));
+  const max = Math.max.apply(null, values.concat([1]));
+  const span = (max - min) || 1;
+  ctx.strokeStyle = "#eef1f6"; ctx.fillStyle = "#9aa5b5"; ctx.font = "10px sans-serif";
+  ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  for (let g = 0; g <= 4; g++) {
+    const y = pad.t + ih - ih * g / 4;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+    ctx.fillText((max - span * g / 4).toFixed(1), pad.l - 5, y);
+  }
+  const X = i => pad.l + iw * i / (labels.length - 1 || 1);
+  const Y = v => pad.t + ih * (1 - (v - min) / span);
+  ctx.beginPath();
+  values.forEach((v, i) => i === 0 ? ctx.moveTo(X(i), Y(v)) : ctx.lineTo(X(i), Y(v)));
+  ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
+  ctx.lineTo(X(labels.length - 1), pad.t + ih); ctx.lineTo(X(0), pad.t + ih); ctx.closePath();
+  ctx.globalAlpha = 0.12; ctx.fillStyle = color; ctx.fill(); ctx.globalAlpha = 1;
+  values.forEach((v, i) => {
+    ctx.beginPath(); ctx.arc(X(i), Y(v), 2.4, 0, Math.PI * 2);
+    ctx.fillStyle = color; ctx.fill();
+  });
+  ctx.fillStyle = "#9aa5b5"; ctx.textAlign = "center"; ctx.textBaseline = "top";
+  [0, Math.floor((labels.length - 1) / 2), labels.length - 1].forEach(i => {
+    ctx.fillText(labels[i], X(i), h - 18);
+  });
+}
+
+/* ---------------- 状态 ---------------- */
+let STATS = null;
+let SELECTED_RED = 0;
+let LAST_PRED = null;
+
+/* ---------------- 趋势页 ---------------- */
+function renderTrend() {
+  STATS = computeStats(DRAW_DATA, parseInt($("winSelect").value, 10));
+  $("redStatInfo").textContent = STATS.statsText;
+  $("blueStatInfo").textContent = STATS.statsText;
+  renderRedBars();
+  renderBlueBars();
+  renderTables();
+  renderHeat();
+  selectRed(SELECTED_RED || STATS.red.reduce((best, r) => r.cnt > best.cnt ? r : best).n);
+}
+
+const STATUS_COLOR = { hot: "#d63b3b", warm: "#e8952f", cold: "#2f6fed" };
+const STATUS_BADGE = { hot: "热", warm: "温", cold: "冷" };
+
+function renderRedBars() {
+  const c = $("redBars");
+  drawBars(c, STATS.red.map(r => ({ n: r.n, val: r.cnt })), 4, STATS.red.map(r => STATUS_COLOR[r.status]));
+  c.onclick = e => {
+    if (!c._meta) return;
+    const rect = c.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const idx = Math.floor((x - c._meta.padL) / c._meta.bw);
+    if (idx >= 0 && idx < 33) selectRed(idx + 1);
+  };
+}
+
+function renderBlueBars() {
+  drawBars($("blueBars"), STATS.blue.map(b => ({ n: b.n, val: b.cnt })), 3,
+    STATS.blue.map(b => STATUS_COLOR[b.status]));
+}
+
+function sortItems(list) {
+  const key = $("sortSelect").value;
+  const sorted = list.slice();
+  if (key === "cnt") sorted.sort((a, b) => b.cnt - a.cnt);
+  else if (key === "gap") sorted.sort((a, b) => b.gap - a.gap);
+  else if (key === "maxgap") sorted.sort((a, b) => b.maxGap - a.maxGap);
+  else sorted.sort((a, b) => b.freq - a.freq);
+  return sorted;
+}
+
+function rowHtml(it, isRed, onPick) {
+  const trend = it.trend === "up" ? '<span class="up">↑</span>'
+    : it.trend === "down" ? '<span class="down">↓</span>' : '<span class="flat">→</span>';
+  return el("tr", { class: isRed && SELECTED_RED === it.n ? "sel-row" : "" }, [
+    el("td", { class: isRed ? "num" : "blue", text: String(it.n).padStart(2, "0") }),
+    el("td", { text: String(it.cnt) }),
+    el("td", { text: (it.freq * 100).toFixed(1) + "%" }),
+    el("td", { text: String(it.last10) }),
+    el("td", { text: String(it.gap) }),
+    el("td", { text: String(it.maxGap) }),
+    el("td", { text: it.avgGap > W_SAFE ? "—" : it.avgGap.toFixed(1) }),
+    el("td", {}, [el("span", { class: "badge " + it.status, text: STATUS_BADGE[it.status] })]),
+    el("td", { html: trend })
+  ]);
+}
+const W_SAFE = 100000; // avgGap 兜底
+
+function renderTables() {
+  const redBody = $("redTableBody");
+  const blueBody = $("blueTableBody");
+  redBody.innerHTML = ""; blueBody.innerHTML = "";
+  const sel = SELECTED_RED;
+  sortItems(STATS.red).forEach(it => {
+    const tr = rowHtml(it, true);
+    tr.onclick = () => selectRed(it.n);
+    redBody.appendChild(tr);
+  });
+  sortItems(STATS.blue).forEach(it => {
+    blueBody.appendChild(rowHtml(it, false));
+  });
+  // 高亮当前选中行（排序后重设）
+  redBody.querySelectorAll("tr").forEach(tr => {
+    tr.classList.toggle("sel-row", tr.children[0] && parseInt(tr.children[0].textContent, 10) === sel);
+  });
+}
+
+function renderHeat() {
+  const R = parseInt($("heatSelect").value, 10);
+  const rows = STATS.draws.slice(-R).reverse(); // 最新在上
+  const redHeat = $("redHeat"), blueHeat = $("blueHeat");
+  redHeat.innerHTML = ""; blueHeat.innerHTML = "";
+
+  const head = el("div", { class: "heat-x" });
+  for (let n = 1; n <= 33; n++) head.appendChild(el("span", { text: String(n % 10) }));
+  redHeat.appendChild(head);
+  const bhead = el("div", { class: "heat-x" });
+  for (let n = 1; n <= 16; n++) bhead.appendChild(el("span", { text: String(n % 10) }));
+  blueHeat.appendChild(bhead);
+
+  rows.forEach(d => {
+    const rrow = el("div", { class: "heat-row" }, [
+      el("span", { class: "heat-label", text: d.issue.slice(-5) })
+    ]);
+    for (let n = 1; n <= 33; n++) {
+      rrow.appendChild(el("div", {
+        class: "heat-cell" + (d.red.includes(n) ? " on-red" : ""),
+        title: `${d.issue} · ${String(n).padStart(2, "0")}`
+      }));
+    }
+    redHeat.appendChild(rrow);
+    const brow = el("div", { class: "heat-row" }, [
+      el("span", { class: "heat-label", text: d.issue.slice(-5) })
+    ]);
+    for (let n = 1; n <= 16; n++) {
+      brow.appendChild(el("div", {
+        class: "heat-cell" + (d.blue === n ? " on-blue" : ""),
+        title: `${d.issue} · 蓝${String(n).padStart(2, "0")}`
+      }));
+    }
+    blueHeat.appendChild(brow);
+  });
+}
+
+function selectRed(n) {
+  SELECTED_RED = n;
+  const it = STATS.red[n - 1];
+  $("selTitle").textContent = `单号走势：红球 ${String(n).padStart(2, "0")}（滚动 10 期出现频率）`;
+  $("selDetail").textContent =
+    `次数 ${it.cnt} · 频率 ${(it.freq * 100).toFixed(1)}% · 状态 ${STATUS_BADGE[it.status]} · ` +
+    `当前遗漏 ${it.gap} 期（最大 ${it.maxGap}）· 上次出现 ${it.lastIssue}`;
+  const L = Math.min(40, STATS.windowSize);
+  const labels = [], values = [];
+  const base = STATS.windowSize - L;
+  for (let i = 0; i < L; i++) {
+    const slice = STATS.draws.slice(base + i - 9, base + i + 1);
+    const cnt = slice.filter(d => d.red.includes(n)).length;
+    labels.push(STATS.draws[base + i].issue.slice(-5));
+    values.push(cnt / slice.length * 100);
+  }
+  drawLine($("lineChart"), labels, values, "#d63b3b");
+  renderTables(); // 刷新选中行高亮
+}
+
+/* ---------------- 预测页 ---------------- */
+function runPredict() {
+  const key = document.querySelector('input[name="preset"]:checked').value;
+  LAST_PRED = predict(STATS, key);
+  $("predModelName").textContent = `模型：${LAST_PRED.model}`;
+  const rec = LAST_PRED.rec;
+  const recBox = $("predRec");
+  recBox.innerHTML = "";
+  rec.red.forEach(n => recBox.appendChild(el("span", { class: "chip", text: String(n).padStart(2, "0") })));
+  recBox.appendChild(el("span", { class: "chip blue", text: String(rec.blue).padStart(2, "0") }));
+  $("predBlueAlt").textContent = `蓝球备选：${rec.blueAlt.map(b => String(b).padStart(2, "0")).join("、")}`;
+
+  const redBody = $("predRedBody"), blueBody = $("predBlueBody");
+  redBody.innerHTML = ""; blueBody.innerHTML = "";
+  LAST_PRED.red.forEach((x, i) => {
+    redBody.appendChild(el("tr", {}, [
+      el("td", { text: String(i + 1) }),
+      el("td", { class: "num", text: String(x.n).padStart(2, "0") }),
+      el("td", {}, [el("div", { class: "prob-cell" }, [
+        el("div", { class: "prob-bar", style: `width:${Math.min(100, x.p * 420)}px` }),
+        el("span", { class: "pval", text: (x.p * 100).toFixed(2) + "%" })
+      ])]),
+      el("td", { text: x.exp.toFixed(2) }),
+      el("td", { html: sigHtml(x) })
+    ]));
+  });
+  LAST_PRED.blue.forEach((x, i) => {
+    blueBody.appendChild(el("tr", {}, [
+      el("td", { text: String(i + 1) }),
+      el("td", { class: "blue", text: String(x.n).padStart(2, "0") }),
+      el("td", {}, [el("div", { class: "prob-cell" }, [
+        el("div", { class: "prob-bar", style: `width:${Math.min(100, x.p * 160)}px` }),
+        el("span", { class: "pval", text: (x.p * 100).toFixed(2) + "%" })
+      ])]),
+      el("td", { html: sigHtml(x) })
+    ]));
+  });
+  $("predResult").classList.remove("hidden");
+  $("btnPredSim").disabled = false;
+}
+
+function sigHtml(x) {
+  const f = (v) => (v >= 0 ? "+" : "") + v.toFixed(2);
+  return `<span class="${x.zFreq >= 0 ? "up" : "down"}">频${f(x.zFreq)}</span> ` +
+         `<span class="${x.zRec >= 0 ? "up" : "down"}">近${f(x.zRec)}</span> ` +
+         `<span class="${x.zGap >= 0 ? "up" : "down"}">漏${f(x.zGap)}</span>`;
+}
+
+function runPredSim() {
+  if (!LAST_PRED) return;
+  const box = $("predSim");
+  box.innerHTML = "";
+  const redW = LAST_PRED.red.slice().sort((a, b) => a.n - b.n).map(x => x.p);
+  const blueW = LAST_PRED.blue.slice().sort((a, b) => a.n - b.n).map(x => x.p);
+  const nums = Array.from({ length: 33 }, (_, i) => i + 1);
+  const blues = Array.from({ length: 16 }, (_, i) => i + 1);
+  for (let i = 0; i < 10; i++) {
+    const red = simulateWeighted(nums, 6, redW).sort((a, b) => a - b);
+    const blue = simulateWeighted(blues, 1, blueW)[0];
+    box.appendChild(comboRow(i + 1, red, blue));
+  }
+}
+
+/* ---------------- 选号页 ---------------- */
+function comboRow(idx, red, blue) {
+  const row = el("div", { class: "combo" }, [el("b", { text: `第 ${idx} 注` })]);
+  red.forEach(n => row.appendChild(el("span", { class: "chip", text: String(n).padStart(2, "0") })));
+  row.appendChild(el("span", { class: "chip blue", text: String(blue).padStart(2, "0") }));
+  return row;
+}
+
+function renderCombos(list, container, total) {
+  container.innerHTML = "";
+  const count = el("p", { class: "gen-count" });
+  if (total != null) count.textContent = `共 ${total} 注，金额 ${(total * 2).toLocaleString()} 元`;
+  container.appendChild(count);
+  const MAX_SHOW = 300;
+  list.slice(0, MAX_SHOW).forEach((c, i) => container.appendChild(comboRow(i + 1, c.red, c.blue)));
+  if (list.length > MAX_SHOW) {
+    container.appendChild(el("p", { class: "hint", text: `已显示前 ${MAX_SHOW} 注，共 ${list.length} 注` }));
+  }
+}
+
+const sel = { dan: new Set(), tuo: new Set(), blue: new Set() };
+let dtMode = "dan";
+
+function buildNumberGrids() {
+  const danGrid = $("danGrid");
+  const blueGrid = $("blueGrid");
+  danGrid.innerHTML = ""; blueGrid.innerHTML = "";
+  for (let n = 1; n <= 33; n++) {
+    const b = el("button", { class: "num", text: String(n).padStart(2, "0") });
+    b.onclick = () => {
+      if (dtMode === "dan") {
+        if (sel.dan.has(n)) { sel.dan.delete(n); }
+        else {
+          if (sel.dan.size >= 5) { alert("胆码最多 5 个"); return; }
+          sel.dan.add(n); sel.tuo.delete(n);
+        }
+      } else if (dtMode === "tuo") {
+        if (sel.tuo.has(n)) { sel.tuo.delete(n); }
+        else { sel.tuo.add(n); sel.dan.delete(n); }
+      } else { // 蓝球模式误点红球：忽略
+        return;
+      }
+      refreshGrids();
+    };
+    danGrid.appendChild(b);
+  }
+  for (let n = 1; n <= 16; n++) {
+    const b = el("button", { class: "num", text: String(n).padStart(2, "0") });
+    b.onclick = () => {
+      if (sel.blue.has(n)) sel.blue.delete(n); else sel.blue.add(n);
+      refreshGrids();
+    };
+    blueGrid.appendChild(b);
+  }
+}
+
+function refreshGrids() {
+  const nums = $("danGrid").children;
+  for (let n = 1; n <= 33; n++) {
+    nums[n - 1].className = "num" +
+      (sel.dan.has(n) ? " dan" : sel.tuo.has(n) ? " tuo" : "");
+  }
+  const blues = $("blueGrid").children;
+  for (let n = 1; n <= 16; n++) {
+    blues[n - 1].className = "num" + (sel.blue.has(n) ? " blue-sel" : "");
+  }
+  updateDtSummary();
+}
+
+function updateDtSummary() {
+  const dan = [...sel.dan].sort((a, b) => a - b);
+  const tuo = [...sel.tuo].sort((a, b) => a - b);
+  const blue = [...sel.blue].sort((a, b) => a - b);
+  const box = $("dtSummary");
+  let msg = `胆码 ${dan.length} 个：${dan.join("、") || "—"}　|　拖码 ${tuo.length} 个：${tuo.join("、") || "—"}　|　蓝球 ${blue.length} 个：${blue.join("、") || "—"}`;
+  const d = dan.length, t = tuo.length, need = 6 - d;
+  if (d >= 1 && d <= 5 && t >= need && blue.length >= 1) {
+    const total = cnk(t, need) * blue.length;
+    msg += `<br>可生成 <b>${total.toLocaleString()} 注</b>，金额 <b>${(total * 2).toLocaleString()} 元</b>`;
+  } else {
+    msg += `<br><span style="color:var(--red)">${d === 0 ? "请先选择 1–5 个胆码" : t < need ? `拖码还需 ${need - t} 个` : "请选择至少 1 个蓝球"}</span>`;
+  }
+  box.innerHTML = msg;
+}
+
+function doGenDanTuo(all) {
+  const dan = [...sel.dan], tuo = [...sel.tuo], blues = [...sel.blue];
+  const res = genDanTuo(dan, tuo, blues, all ? { all: true } : { n: parseInt($("dtSample").value, 10) || 5 });
+  const box = $("dtResult");
+  if (res.error) { box.innerHTML = ""; box.appendChild(el("p", { class: "hint", text: res.error })); return; }
+  renderCombos(res.list, box, res.total);
+  const dl = $("btnDtDownload");
+  dl.classList.toggle("hidden", !all);
+  if (all) dl.dataset.total = res.total;
+}
+
+function downloadTxt() {
+  const dan = [...sel.dan], tuo = [...sel.tuo], blues = [...sel.blue];
+  const need = 6 - dan.length;
+  const lines = [];
+  const cap = 100000;
+  outer:
+  for (const drag of combos(tuo, need)) {
+    for (const bl of blues) {
+      if (lines.length >= cap) break outer;
+      const red = dan.concat(drag).sort((a, b) => a - b);
+      lines.push(red.map(n => String(n).padStart(2, "0")).join(" ") + "  蓝 " + String(bl).padStart(2, "0"));
+    }
+  }
+  const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+  const a = el("a", { href: URL.createObjectURL(blob), download: "双色球胆拖组合.txt" });
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+/* ---------------- 数据更新 ---------------- */
+function updateHeader() {
+  if (!DRAW_DATA.length) { $("dataCount").textContent = "0"; $("dataLatest").textContent = "—"; return; }
+  const last = DRAW_DATA[DRAW_DATA.length - 1];
+  $("dataCount").textContent = String(DRAW_DATA.length);
+  $("dataLatest").textContent = `${last.issue} 期（${last.date}）`;
+}
+
+function toExportJSON() {
+  return {
+    state: 0, message: "双色球历史数据（双色球助手导出）", Tflag: 0,
+    result: DRAW_DATA.slice().reverse().map(d => ({
+      name: "双色球", code: d.issue, date: d.date,
+      red: d.red.join(","), blue: String(d.blue).padStart(2, "0")
+    }))
+  };
+}
+
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(toExportJSON())], { type: "application/json" });
+  const a = el("a", { href: URL.createObjectURL(blob), download: "双色球历史数据.json" });
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+function importJSON(text) {
+  let parsed;
+  try { parsed = JSON.parse(text); } catch (e) { alert("JSON 解析失败：" + e.message); return; }
+  const draws = normalize(parsed);
+  if (draws.length < 10) { alert(`数据无效或不足 10 期（解析到 ${draws.length} 期）。请提供形如 {"result":[{...}]} 的数据，最新期在前。`); return; }
+  DRAW_DATA = draws;
+  updateHeader();
+  renderTrend();
+  $("importPanel").classList.add("hidden");
+  $("importText").value = "";
+  alert(`导入成功：${draws.length} 期（最新 ${draws[draws.length - 1].issue} 期）`);
+}
+
+/* ---------------- 数据源（按顺序自动降级） ----------------
+ * 官方接口直连无 CORS 头，浏览器会拦截；GitHub raw 与 jsDelivr 均带
+ * Access-Control-Allow-Origin: *，浏览器可直连，且数据每日更新。
+ * 依次尝试，第一个成功即用。
+ * ------------------------------------------------------------ */
+function adaptGitHub(json) {
+  // fetch_history/lottery_data.json 或 data/lottery_history.json 的 data 数组
+  const list = Array.isArray(json) ? json : (json && Array.isArray(json.data) ? json.data : []);
+  return {
+    result: list.map(d => ({
+      code: String(d.period != null ? d.period : ""),
+      date: d.date || "",
+      red: (Array.isArray(d.red_balls) ? d.red_balls : String(d.red || "").split(",")).join(","),
+      blue: Number(d.blue_ball != null ? d.blue_ball : d.blue)
+    }))
+  };
+}
+
+const DATA_SOURCES = [
+  {
+    name: "官方福彩接口（直连）",
+    url: "https://www.cwl.gov.cn/cwl_admin/front/cwlkj/search/kjxx/findDrawNotice?name=ssq&issueCount=100",
+    adapt: json => json
+  },
+  {
+    name: "GitHub 镜像① raw",
+    url: "https://raw.githubusercontent.com/sinyu1012/Double-Color-Ball-AI/main/fetch_history/lottery_data.json",
+    adapt: adaptGitHub
+  },
+  {
+    name: "GitHub 镜像② raw",
+    url: "https://raw.githubusercontent.com/sinyu1012/Double-Color-Ball-AI/main/data/lottery_history.json",
+    adapt: adaptGitHub
+  },
+  {
+    name: "GitHub 镜像③ jsDelivr CDN",
+    url: "https://cdn.jsdelivr.net/gh/sinyu1012/Double-Color-Ball-AI@main/fetch_history/lottery_data.json",
+    adapt: adaptGitHub
+  }
+];
+
+async function fetchSource(src, timeoutMs) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const resp = await fetch(src.url, {
+      signal: ctrl.signal,
+      headers: { "Accept": "application/json" }
+    });
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    return await resp.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function fetchOnline() {
+  const btn = $("btnOnline");
+  btn.disabled = true;
+  const failures = [];
+  for (let i = 0; i < DATA_SOURCES.length; i++) {
+    const src = DATA_SOURCES[i];
+    btn.textContent = `更新中（${i + 1}/${DATA_SOURCES.length}：${src.name.replace(/^GitHub /, "镜像")}）…`;
+    try {
+      const json = await fetchSource(src, 9000);
+      const draws = normalize(src.adapt(json));
+      if (draws.length < 10) throw new Error("有效数据不足（" + draws.length + " 期）");
+      DRAW_DATA = draws;
+      updateHeader();
+      renderTrend();
+      const last = draws[draws.length - 1];
+      btn.disabled = false; btn.textContent = "在线更新";
+      alert(`✅ 在线更新成功（来源：${src.name}）\n共 ${draws.length} 期，最新 ${last.issue} 期（${last.date}）`);
+      return;
+    } catch (e) {
+      failures.push(`· ${src.name}：${e.message || e}`);
+    }
+  }
+  btn.disabled = false; btn.textContent = "在线更新";
+  alert("❌ 全部数据源尝试失败：\n\n" + failures.join("\n") +
+    "\n\n解决办法（任选其一）：\n" +
+    "1. 检查网络后重新点击「在线更新」；\n" +
+    "2. 本机已装 Node.js 的话，运行插件目录里的「node update-data.mjs」一键更新（无浏览器限制）；\n" +
+    "3. 点「导出数据」拿到 JSON → 用官方接口最新数据替换 → 再点「导入数据」粘贴。");
+}
+
+/* ---------------- 初始化 ---------------- */
+function init() {
+  updateHeader();
+  buildNumberGrids();
+  refreshGrids();
+
+  // 标签页
+  document.querySelectorAll(".tab-btn").forEach(b => {
+    b.onclick = () => {
+      document.querySelectorAll(".tab-btn").forEach(x => x.classList.remove("active"));
+      document.querySelectorAll(".panel").forEach(x => x.classList.remove("active"));
+      b.classList.add("active");
+      $(b.dataset.tab).classList.add("active");
+      if (b.dataset.tab === "tab-trend") renderTrend();
+    };
+  });
+
+  // 趋势
+  $("winSelect").onchange = renderTrend;
+  $("sortSelect").onchange = renderTrend;
+  $("heatSelect").onchange = renderHeat;
+
+  // 预测
+  $("btnPredict").onclick = runPredict;
+  $("btnPredSim").onclick = runPredSim;
+
+  // 随机
+  $("btnRand").onclick = () => {
+    const n = Math.max(1, Math.min(50, parseInt($("randCount").value, 10) || 5));
+    const box = $("randResult");
+    box.innerHTML = "";
+    box.appendChild(el("p", { class: "gen-count", text: `共 ${n} 注，金额 ${(n * 2).toLocaleString()} 元（纯随机）` }));
+    genRandom(n).forEach((c, i) => box.appendChild(comboRow(i + 1, c.red, c.blue)));
+  };
+
+  // 胆拖
+  document.querySelectorAll('input[name="dtmode"]').forEach(r => {
+    r.onchange = () => { dtMode = r.value; };
+  });
+  $("btnDtClear").onclick = () => { sel.dan.clear(); sel.tuo.clear(); sel.blue.clear(); refreshGrids(); $("dtResult").innerHTML = ""; $("btnDtDownload").classList.add("hidden"); };
+  $("btnDtAll").onclick = () => doGenDanTuo(true);
+  $("btnDtSample").onclick = () => doGenDanTuo(false);
+  $("btnDtDownload").onclick = downloadTxt;
+
+  // 数据
+  $("btnExport").onclick = exportJSON;
+  $("btnImport").onclick = () => $("importPanel").classList.toggle("hidden");
+  $("btnImportClose").onclick = () => $("importPanel").classList.add("hidden");
+  $("btnImportGo").onclick = () => importJSON($("importText").value);
+  $("btnOnline").onclick = fetchOnline;
+
+  renderTrend();
+  if (!DRAW_DATA.length) alert("未内置历史数据，请点「导入数据」粘贴双色球历史 JSON。");
+}
+
+if (typeof document !== "undefined" && typeof window !== "undefined") {
+  document.addEventListener("DOMContentLoaded", init);
+}
+
+/* Node 测试导出 */
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { normalize, computeStats, predict, genDanTuo, genRandom, cnk, combos, simulateWeighted, softmax, adaptGitHub, DATA_SOURCES };
+}
+
+</script>
+</body>
+</html>

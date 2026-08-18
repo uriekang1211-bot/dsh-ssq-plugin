@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>双色球助手 · 趋势追踪 · 智能预测 · 胆拖/随机选号</title>
+<style>
+/*__CSS__*/
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="head-row">
+      <h1>🎱 双色球助手</h1>
+      <div class="head-actions">
+        <button id="btnOnline" class="btn ghost" title="尝试从中国福彩官网接口拉取最新数据">在线更新</button>
+        <button id="btnExport" class="btn ghost" title="把当前数据导出为 JSON 文件，日后可再导入">导出数据</button>
+        <button id="btnImport" class="btn ghost" title="粘贴或导入 JSON 数据">导入数据</button>
+      </div>
+    </div>
+    <p class="head-sub">
+      数据源：中国福利彩票发行管理中心（cwl.gov.cn）｜
+      窗口：最近 <b id="dataCount">–</b> 期（含最新一期 <b id="dataLatest">–</b>）
+    </p>
+    <div id="importPanel" class="card hidden">
+      <p>将「双色球历史数据 JSON」（形如 <code>{"result":[{"code":"2026094","red":"06,13,15,17,24,25","blue":"01"}, ...]}</code>，最新期在前）粘贴到下面：</p>
+      <textarea id="importText" rows="6" placeholder='{"result":[{...}]}'></textarea>
+      <div class="btn-row">
+        <button id="btnImportGo" class="btn primary">导入并重新统计</button>
+        <button id="btnImportClose" class="btn ghost">取消</button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="tab-trend">📈 趋势追踪</button>
+    <button class="tab-btn" data-tab="tab-predict">🎯 智能预测</button>
+    <button class="tab-btn" data-tab="tab-gen">🎲 选号生成</button>
+  </nav>
+
+  <!-- ==================== 趋势追踪 ==================== -->
+  <section id="tab-trend" class="panel active">
+    <div class="card">
+      <div class="ctrl-row">
+        <label>统计窗口
+          <select id="winSelect">
+            <option value="10">最近 10 期</option>
+            <option value="20">最近 20 期</option>
+            <option value="30">最近 30 期</option>
+            <option value="50">最近 50 期</option>
+            <option value="80">最近 80 期</option>
+            <option value="100" selected>最近 100 期</option>
+          </select>
+        </label>
+        <label>明细排序
+          <select id="sortSelect">
+            <option value="cnt" selected>出现次数 ↓</option>
+            <option value="gap">当前遗漏 ↓</option>
+            <option value="maxgap">最大遗漏 ↓</option>
+            <option value="freq">出现频率 ↓</option>
+          </select>
+        </label>
+        <label>热力图期数
+          <select id="heatSelect">
+            <option value="10">最近 10 期</option>
+            <option value="20" selected>最近 20 期</option>
+            <option value="30">最近 30 期</option>
+            <option value="50">最近 50 期</option>
+          </select>
+        </label>
+        <span class="legend">
+          <i class="lg hot"></i>热号 <i class="lg warm"></i>温号 <i class="lg cold"></i>冷号
+        </span>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>红球（1–33）出现次数分布</h3>
+        <canvas id="redBars" height="230"></canvas>
+        <p class="hint">点击柱子可查看该号码的走势曲线</p>
+      </div>
+      <div class="card">
+        <h3>蓝球（1–16）出现次数分布</h3>
+        <canvas id="blueBars" height="230"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>红球明细（点击行查看走势）</h3>
+        <span id="redStatInfo" class="hint"></span>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>号码</th><th>次数</th><th>频率</th><th>近10期</th><th>当前遗漏</th>
+            <th>最大遗漏</th><th>平均遗漏</th><th>状态</th><th>趋势</th>
+          </tr></thead>
+          <tbody id="redTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>蓝球明细</h3>
+        <span id="blueStatInfo" class="hint"></span>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>号码</th><th>次数</th><th>频率</th><th>近10期</th><th>当前遗漏</th>
+            <th>最大遗漏</th><th>平均遗漏</th><th>状态</th><th>趋势</th>
+          </tr></thead>
+          <tbody id="blueTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>红球出现热力图</h3>
+        <div id="redHeat" class="heat"></div>
+      </div>
+      <div class="card">
+        <h3>蓝球出现热力图</h3>
+        <div id="blueHeat" class="heat"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3 id="selTitle">单号走势（滚动 10 期出现频率）</h3>
+        <span id="selDetail" class="hint"></span>
+      </div>
+      <canvas id="lineChart" height="220"></canvas>
+    </div>
+  </section>
+
+  <!-- ==================== 智能预测 ==================== -->
+  <section id="tab-predict" class="panel">
+    <div class="card warn-card">
+      ⚠️ <b>理性提示：</b>双色球每次开奖均为独立随机事件，任何统计方法都无法提高中奖概率。
+      以下预测仅基于历史频率/遗漏等信号的<b>娱乐性估算</b>，请量力而行、理性购彩。
+    </div>
+    <div class="card">
+      <h3>预测模型</h3>
+      <div class="ctrl-row">
+        <label class="radio"><input type="radio" name="preset" value="balanced" checked> 均衡混合
+          <span class="hint">频率 40% · 近期 30% · 遗漏回补 30%</span></label>
+        <label class="radio"><input type="radio" name="preset" value="cold"> 冷号回补
+          <span class="hint">侧重当前遗漏超期未出的号码</span></label>
+        <label class="radio"><input type="radio" name="preset" value="hot"> 热号延续
+          <span class="hint">侧重近期高频出现的号码</span></label>
+      </div>
+      <div class="btn-row">
+        <button id="btnPredict" class="btn primary">开始预测下一期</button>
+        <button id="btnPredSim" class="btn" disabled>按预测概率模拟 10 注</button>
+      </div>
+    </div>
+
+    <div id="predResult" class="hidden">
+      <div class="card">
+        <div class="card-head">
+          <h3>📌 预测推荐</h3>
+          <span id="predModelName" class="hint"></span>
+        </div>
+        <div id="predRec" class="chips"></div>
+        <p id="predBlueAlt" class="hint"></p>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h3>红球预测概率排名</h3>
+          <div class="tbl-wrap scroll">
+            <table>
+              <thead><tr><th>排名</th><th>号码</th><th>预测概率</th><th>下期期望次数</th><th>信号分解</th></tr></thead>
+              <tbody id="predRedBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <h3>蓝球预测概率排名</h3>
+          <div class="tbl-wrap scroll">
+            <table>
+              <thead><tr><th>排名</th><th>号码</th><th>预测概率</th><th>信号分解</th></tr></thead>
+              <tbody id="predBlueBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>预测模拟号码（按概率加权随机）</h3>
+        <div id="predSim" class="chips-col"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 选号生成 ==================== -->
+  <section id="tab-gen" class="panel">
+    <div class="grid2">
+      <div class="card">
+        <h3>🎲 纯随机选号</h3>
+        <p class="hint">完全随机生成 6 个红球（1–33）+ 1 个蓝球（1–16）。</p>
+        <div class="ctrl-row">
+          <label>注数
+            <input id="randCount" type="number" min="1" max="50" value="5">
+          </label>
+          <button id="btnRand" class="btn primary">随机生成</button>
+        </div>
+        <div id="randResult" class="chips-col"></div>
+      </div>
+
+      <div class="card">
+        <h3>🎯 胆拖选号（双色球胆拖规则）</h3>
+        <p class="hint">
+          规则：胆码 <b>1–5 个</b>（每注必中）；拖码至少 <b>6 − 胆码数</b> 个；每注 = 全部胆码 + 从拖码中取足 6 个红球 + 1 个蓝球。
+        </p>
+        <div class="ctrl-row">
+          <label class="radio"><input type="radio" name="dtmode" value="dan" checked> 选胆码</label>
+          <label class="radio"><input type="radio" name="dtmode" value="tuo"> 选拖码</label>
+          <label class="radio"><input type="radio" name="dtmode" value="blue"> 选蓝球</label>
+          <button id="btnDtClear" class="btn ghost">清空</button>
+        </div>
+        <p class="hint">红球：</p>
+        <div id="danGrid" class="num-grid"></div>
+        <p class="hint">蓝球：</p>
+        <div id="blueGrid" class="num-grid blue-grid"></div>
+        <div id="dtSummary" class="summary"></div>
+        <div class="ctrl-row">
+          <button id="btnDtAll" class="btn primary">生成全部组合</button>
+          <label>随机抽
+            <input id="dtSample" type="number" min="1" max="100" value="5"> 注
+          </label>
+          <button id="btnDtSample" class="btn">抽取</button>
+          <button id="btnDtDownload" class="btn ghost hidden">导出全部为 .txt</button>
+        </div>
+        <div id="dtResult" class="chips-col"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p class="disclaimer">
+      ⚠️ 本工具仅供学习与娱乐参考，不构成任何投注建议。彩票开奖为独立随机事件，
+      请理性购彩、量力而行，未成年人禁止购彩。<br>
+      <span class="hint">数据来源：中国福利彩票发行管理中心公开开奖公告（cwl.gov.cn）及其每日更新的 GitHub 镜像。
+      更新数据：点「在线更新」（自动多源降级：官方直连 → GitHub 镜像 → CDN）；仍失败可运行本机脚本
+      <code>node update-data.mjs</code> 一键更新，或用「导出数据 / 导入数据」手动替换。</span>
+    </p>
+  </footer>
+</div>
+
+<script>
+"use strict";
+const EMBEDDED_DATA = /*__DATA_JSON__*/;
+/*__APP_JS__*/
+</script>
+</body>
+</html>
