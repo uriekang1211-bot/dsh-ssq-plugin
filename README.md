@@ -1,8 +1,31 @@
 # 🎱 双色球助手（SSQ Helper）
 
-一个**开箱即用的双色球分析插件**：单文件 HTML，浏览器直接打开即用，无需安装、无需联网依赖。
+一个双色球分析**双形态插件**：
+- **DSH 插件**（推荐）：安装进 DeepSeek Harness 后，在对话里直接让模型调用 `ssq` 工具做趋势分析、预测、胆拖/随机选号
+- **单文件 HTML**：`dist/index.html` 浏览器双击即用，带可视化图表，无需安装
 
-## 快速开始
+## 安装到 DSH
+
+### 方式一：插件市场（收录后可用）
+打开 DSH Web → **设置 → 插件市场** → 搜索 `ssq` 一键安装（需先被 [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) 目录收录，见下文「提交收录」）。
+
+### 方式二：命令行直接安装（现在就可用）
+```sh
+dsh plugin --profile web add github:uriekang1211-bot/dsh-ssq-plugin
+```
+装完后刷新页面（或重启 `dsh web`），然后在对话里使用，例如：
+- 「用 ssq 统计最近 100 期每个号码的出现趋势」
+- 「用 ssq 冷号回补模型预测下一期」
+- 「用 ssq 按胆拖规则生成 5 注：胆码 01 08，拖码 12 15 20 23 28 31，蓝球 05 09」
+
+插件自动多源拉取最新开奖数据（官方接口 → GitHub 镜像 → CDN），失败时回退内置快照。
+
+### 卸载
+```sh
+dsh plugin --profile web remove dsh-ssq-plugin
+```
+
+## 快速开始（HTML 版）
 
 双击打开 **`dist/index.html`** 即可（Chrome / Edge / Safari 均可）。
 
@@ -50,22 +73,47 @@
 ## 文件结构
 
 ```
-ssq-plugin/
-├── dist/index.html     ← 成品插件（单文件，直接打开）
-├── template.html       ← 页面模板
-├── src/style.css       ← 样式
-├── src/app.js          ← 核心逻辑（统计 / 预测 / 胆拖随机）
+dsh-ssq-plugin/
+├── package.json        ← DSH 插件包清单（dsh.bundle 声明）
+├── cordis.patch.yml    ← 插件 layer 插入补丁
+├── lib/index.js        ← DSH 插件入口（注册 ssq 聊天工具）
+├── lib/ssq-core.js     ← 插件版核心逻辑（ESM）
+├── data/ssq-history.json ← 插件内置数据快照
+├── dist/index.html     ← HTML 版成品（单文件，直接打开）
+├── template.html       ← HTML 版页面模板
+├── src/style.css       ← HTML 版样式
+├── src/app.cjs         ← HTML 版核心逻辑（统计 / 预测 / 胆拖随机）
 ├── history.json        ← 百期开奖数据快照
 ├── build.mjs           ← 构建脚本（node build.mjs）
 ├── update-data.mjs     ← 本机一键更新数据脚本（node update-data.mjs）
-└── test.cjs            ← 算法自测（node test.cjs，33 项断言）
+└── test.cjs            ← 算法自测（node test.cjs，含浏览器版/插件版一致性）
 ```
+
+## 提交收录（让插件进入 DSH 插件市场）
+
+1. 保证仓库根目录 `package.json` 含 `dsh.bundle` 声明（本仓库已满足）
+2. 向 [awesome-dsh-plugin/awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) 仓库提交 PR，在插件列表中新增一条：
+   ```json
+   {
+     "name": "dsh-ssq-plugin",
+     "owner": "uriekang1211-bot",
+     "url": "https://github.com/uriekang1211-bot/dsh-ssq-plugin",
+     "category": "utility",
+     "description": {
+       "en": "SSQ (China Welfare Lottery Double Color Ball) helper: 100-draw trend tracking, frequency-based prediction, dan-tuo/random number generation.",
+       "zh": "双色球助手：百期趋势追踪、智能预测、胆拖/随机选号，模型可直接调用。"
+     },
+     "npm": null,
+     "install": "dsh plugin --profile web add github:uriekang1211-bot/dsh-ssq-plugin"
+   }
+   ```
+3. 收录后（通常一天内），在 DSH Web 的插件市场即可一键安装
 
 ## 开发
 
 ```bash
-cd ssq-plugin
-node build.mjs   # 重新构建 dist/index.html
+cd dsh-ssq-plugin
+node build.mjs   # 重新构建 dist/index.html 并同步 data/ 快照
 node test.cjs    # 运行算法自测
 ```
 

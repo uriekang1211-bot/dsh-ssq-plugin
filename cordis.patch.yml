@@ -1,0 +1,4 @@
+# dsh-ssq-plugin bundle patch: inserts the ssq tool plugin into the layer stack.
+- insert:
+    - id: ssq
+      name: 'dsh-ssq-plugin'

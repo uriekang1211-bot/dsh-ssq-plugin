@@ -1,0 +1,36 @@
+{
+  "name": "dsh-ssq-plugin",
+  "version": "1.0.0",
+  "description": "双色球助手 DSH 插件：百期趋势追踪 / 智能预测 / 胆拖随机选号（ssq 聊天工具 + 单文件 HTML 页面）",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./core": "./lib/ssq-core.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "data",
+    "dist",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh-tools": "0.1.0-rc.7"
+  },
+  "license": "MIT",
+  "keywords": [
+    "dsh-plugin",
+    "双色球",
+    "ssq",
+    "lottery",
+    "cordis"
+  ]
+}
