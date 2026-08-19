@@ -91,22 +91,18 @@ dsh-ssq-plugin/
 
 ## 提交收录（让插件进入 DSH 插件市场）
 
-1. 保证仓库根目录 `package.json` 含 `dsh.bundle` 声明（本仓库已满足）
-2. 向 [awesome-dsh-plugin/awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) 仓库提交 PR，在插件列表中新增一条：
-   ```json
-   {
-     "name": "dsh-ssq-plugin",
-     "owner": "uriekang1211-bot",
-     "url": "https://github.com/uriekang1211-bot/dsh-ssq-plugin",
-     "category": "utility",
-     "description": {
-       "en": "SSQ (China Welfare Lottery Double Color Ball) helper: 100-draw trend tracking, frequency-based prediction, dan-tuo/random number generation.",
-       "zh": "双色球助手：百期趋势追踪、智能预测、胆拖/随机选号，模型可直接调用。"
-     },
-     "npm": null,
-     "install": "dsh plugin --profile web add github:uriekang1211-bot/dsh-ssq-plugin"
-   }
+> 当前版本要求：仓库创建满 **1 天**、提交数 **≥ 10**、`package.json` 声明 `dsh.bundle`（本仓库已满足），并为仓库添加 `dsh-plugin` topic（仓库设置 → Topics）。以上由上游 CI 自动校验。
+
+1. 向 [awesome-dsh-plugin/awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) 提交 PR，新增一个文件 `data/plugins/uriekang1211-bot__dsh-ssq-plugin.yml`：
+   ```yaml
+   url: https://github.com/uriekang1211-bot/dsh-ssq-plugin
+   name: uriekang1211-bot/dsh-ssq-plugin
+   category: tools
+   description:
+     en: 'SSQ (China Welfare Lottery Double Color Ball) helper for DeepSeek Harness: 100-draw trend tracking, frequency prediction and dan-tuo/random generation via the ssq tool.'
+     zh: '双色球助手 DSH 插件：百期趋势追踪、智能预测、胆拖/随机选号，对话中直接调用 ssq 工具。'
    ```
+2. 在 fork 中运行 `npm ci && node scripts/generate-readme.mjs` 重新生成两个 README，与 YAML 一起提交（README 由脚本生成，勿手改）
 3. 收录后（通常一天内），在 DSH Web 的插件市场即可一键安装
 
 ## 开发
