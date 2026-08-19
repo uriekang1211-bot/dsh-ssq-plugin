@@ -53,7 +53,9 @@
             <option value="80">最近 80 期</option>
             <option value="100">最近 100 期</option>
             <option value="200">最近 200 期</option>
+            <option value="300">最近 300 期</option>
             <option value="500">最近 500 期</option>
+            <option value="800">最近 800 期</option>
             <option value="1000" selected>最近 1000 期</option>
           </select>
         </label>
@@ -168,13 +170,23 @@
       <div class="ctrl-row">
         <label>预测数据范围
           <select id="predWinSelect">
+            <option value="50">最近 50 期</option>
             <option value="100">最近 100 期</option>
             <option value="200">最近 200 期</option>
+            <option value="300">最近 300 期</option>
             <option value="500">最近 500 期</option>
+            <option value="800">最近 800 期</option>
             <option value="1000" selected>最近 1000 期</option>
           </select>
         </label>
-        <span class="hint">基于所选期数范围内的历史数据统计并预测（与趋势页窗口相互独立）</span>
+        <label>EWMA 半衰期
+          <select id="ewmaHalfSelect">
+            <option value="20" selected>20 期</option>
+            <option value="50">50 期</option>
+            <option value="100">100 期</option>
+          </select>
+        </label>
+        <span class="hint">基于所选期数范围统计并预测（与趋势页窗口相互独立）；EWMA 半衰期仅「EWMA 近期加权」模型生效</span>
       </div>
       <div class="btn-row">
         <button id="btnPredict" class="btn primary">开始预测下一期</button>

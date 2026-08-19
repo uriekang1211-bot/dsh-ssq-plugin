@@ -55,6 +55,14 @@ async function main() {
   }
   const pe = lib.predict(s, "ewma");
   check("EWMA 模型输出 zEwma 信号", pe.red.every(x => typeof x.zEwma === "number") && pe.red.some(x => x.zEwma !== 0));
+  const sHalf = lib.computeStats(draws, 1000, 50);
+  check("EWMA 半衰期参数生效（20 vs 50 信号不同）",
+    JSON.stringify(sHalf.red.map(r => r.ewma)) !== JSON.stringify(s1k.red.map(r => r.ewma)));
+  check("EWMA 半衰期不影响其他信号",
+    JSON.stringify(sHalf.red.map(r => r.cnt)) === JSON.stringify(s1k.red.map(r => r.cnt)) &&
+    JSON.stringify(sHalf.red.map(r => r.ratioZ)) === JSON.stringify(s1k.red.map(r => r.ratioZ)));
+  const pE50 = lib.predict(sHalf, "ewma");
+  check("半衰期 50 时 ewma 推荐仍合法", pE50.rec.red.length === 6 && pE50.rec.red.every(n => n >= 1 && n <= 33));
   const pm = lib.predict(s, "miss");
   const pmCold = lib.predict(s, "cold");
   check("遗漏均值回归与冷号回补 Top6 重合度高", pm.rec.red.filter(n => pmCold.rec.red.includes(n)).length >= 3);
@@ -145,6 +153,9 @@ async function main() {
     JSON.stringify(ssB.zone) === JSON.stringify(ssE.zone) &&
     JSON.stringify(ssB.sum) === JSON.stringify(ssE.sum));
   check("ESM 版 PRESETS 与浏览器版一致", Object.keys(coreESM.PRESETS).join(",") === Object.keys(lib.PRESETS).join(","));
+  const sHalfB = lib.computeStats(draws, 1000, 100), sHalfE = coreESM.computeStats(drawsB, 1000, 100);
+  check("ESM 版 computeStats(ewmaHalf=100) 与浏览器版一致",
+    JSON.stringify(sHalfB.red.map(r => r.ewma)) === JSON.stringify(sHalfE.red.map(r => r.ewma)));
 
   // 8b. 增量合并 mergeDraws（浏览器版与插件版一致 + 行为校验）
   const mk = (issue, red = [1, 2, 3, 4, 5, 6], blue = 1) => ({ issue, date: "2026-08-01", red, blue });
@@ -199,6 +210,8 @@ async function main() {
     check("tool predict 输出含预测数据范围字段", typeof t2d.first === "string" && typeof t2d.last === "string");
     const t2e = await registered.execute({ action: "predict", preset: "ewma" });
     check("tool predict 支持 ewma 模型", t2e.ok === true && /EWMA 近期加权/.test(t2e.message));
+    const t2e2 = await registered.execute({ action: "predict", preset: "ewma", ewmaHalf: 50 });
+    check("tool predict 支持 ewmaHalf 参数", t2e2.ok === true && /半衰期 50 期/.test(t2e2.message));
     const t2f = await registered.execute({ action: "predict", preset: "miss" });
     check("tool predict 支持 miss 模型", t2f.ok === true && /遗漏均值回归/.test(t2f.message));
     const t2g = await registered.execute({ action: "predict", preset: "expect" });

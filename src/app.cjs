@@ -62,9 +62,10 @@ function mergeDraws(baseline, fresh, max = 1000) {
 }
 
 /* ---------------- 统计核心 ---------------- */
-function computeStats(draws, windowSize) {
+function computeStats(draws, windowSize, ewmaHalf) {
   const W = Math.min(windowSize, draws.length);
   const win = draws.slice(-W);
+  const EWMA_HALF = ewmaHalf > 0 ? ewmaHalf : 20;
   const red = Array.from({ length: 33 }, (_, i) => ({ n: i + 1, cnt: 0, last10: 0, prev10: 0 }));
   const blue = Array.from({ length: 16 }, (_, i) => ({ n: i + 1, cnt: 0, last10: 0, prev10: 0 }));
   const redHit = Array.from({ length: 33 }, () => new Array(W).fill(0));
@@ -106,8 +107,7 @@ function computeStats(draws, windowSize) {
       return s;
     });
     const recZ = zscore(rec);
-    // EWMA 信号：半衰期 20 期的指数加权出现频率（z 标准化），供「EWMA 近期加权」模型使用
-    const EWMA_HALF = 20;
+    // EWMA 信号：半衰期 EWMA_HALF 期的指数加权出现频率（z 标准化），供「EWMA 近期加权」模型使用
     const ewma = hit.map(row => {
       let s = 0;
       for (let di = 0; di < W; di++) s += row[di] * Math.pow(0.5, (W - 1 - di) / EWMA_HALF);
@@ -165,8 +165,8 @@ const PRESETS = {
   cold:     { label: "冷号回补", w: { freq: 0.15, rec: 0.10, gap: 0.75, ewma: 0 } },
   hot:      { label: "热号延续", w: { freq: 0.60, rec: 0.35, gap: 0.05, ewma: 0 } },
   ewma:     { label: "EWMA 近期加权", w: { freq: 0, rec: 0, gap: 0, ewma: 1 } },
-  miss:     { label: "遗漏均值回归", w: { freq: 0, rec: 0, gap: 1, ewma: 0 } },
-  expect:   { label: "期望偏差回补", w: { freq: -1, rec: 0, gap: 0, ewma: 0 } }
+  miss:     { label: "遗漏均值回归", w: { freq: 0.15, rec: 0, gap: 0.85, ewma: 0 } },
+  expect:   { label: "期望偏差回补", w: { freq: -0.6, rec: 0, gap: 0.4, ewma: 0 } }
 };
 
 function softmax(arr) {
@@ -609,9 +609,10 @@ function selectRed(n) {
 /* ---------------- 预测页 ---------------- */
 function runPredict() {
   const key = document.querySelector('input[name="preset"]:checked').value;
-  // 预测数据范围：独立下拉选择（最近 100/200/500/1000 期），与趋势页窗口互不影响
+  // 预测数据范围：独立下拉选择（最近 50~1000 期），与趋势页窗口互不影响；EWMA 半衰期可选
   const w = Math.min(1000, Math.max(10, parseInt($("predWinSelect").value, 10) || 1000));
-  const stats = computeStats(DRAW_DATA, w);
+  const half = parseInt($("ewmaHalfSelect").value, 10) || 20;
+  const stats = computeStats(DRAW_DATA, w, half);
   LAST_PRED = predict(stats, key);
   const first = stats.draws[0], last = stats.draws[stats.draws.length - 1];
   $("predModelName").textContent = `模型：${LAST_PRED.model}（数据：最近 ${stats.windowSize} 期，${first.issue} ~ ${last.issue}）`;
@@ -654,7 +655,8 @@ function runPredict() {
 /* 集成投票：全部模型各自 Top6/Top1 投票，票数高者胜出（同票按平均概率） */
 function runEnsemble() {
   const w = Math.min(1000, Math.max(10, parseInt($("predWinSelect").value, 10) || 1000));
-  const stats = computeStats(DRAW_DATA, w);
+  const half = parseInt($("ewmaHalfSelect").value, 10) || 20;
+  const stats = computeStats(DRAW_DATA, w, half);
   const en = ensemble(stats);
   const first = stats.draws[0], last = stats.draws[stats.draws.length - 1];
   $("predModelName").textContent = `模型：${en.model}（${en.presetKeys.length} 个模型投票，基于最近 ${stats.windowSize} 期，${first.issue} ~ ${last.issue}）`;
