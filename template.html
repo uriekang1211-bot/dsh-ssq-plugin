@@ -152,8 +152,13 @@
       以下预测仅基于历史频率/遗漏等信号的<b>娱乐性估算</b>，请量力而行、理性购彩。
     </div>
     <div class="card">
-      <h3>预测模型</h3>
+      <h3>预测分析</h3>
       <div class="ctrl-row">
+        <label class="radio"><input type="radio" name="analyzeMode" value="predict" checked> ① 单模型预测</label>
+        <label class="radio"><input type="radio" name="analyzeMode" value="ensemble"> ② 集成投票</label>
+        <label class="radio"><input type="radio" name="analyzeMode" value="structure"> ③ 组合结构预测</label>
+      </div>
+      <div id="presetGroup" class="ctrl-row">
         <label class="radio"><input type="radio" name="preset" value="balanced" checked> 均衡混合
           <span class="hint">频率 40% · 近期 30% · 遗漏回补 30%</span></label>
         <label class="radio"><input type="radio" name="preset" value="cold"> 冷号回补
@@ -161,11 +166,11 @@
         <label class="radio"><input type="radio" name="preset" value="hot"> 热号延续
           <span class="hint">侧重近期高频出现的号码</span></label>
         <label class="radio"><input type="radio" name="preset" value="ewma"> EWMA 近期加权
-          <span class="hint">半衰期 20 期指数加权，突出近期走势</span></label>
+          <span class="hint">指数加权突出近期走势，半衰期可调</span></label>
         <label class="radio"><input type="radio" name="preset" value="miss"> 遗漏均值回归
-          <span class="hint">超期未出即回补，纯遗漏视角</span></label>
+          <span class="hint">超期未出为主 + 少量频率混合</span></label>
         <label class="radio"><input type="radio" name="preset" value="expect"> 期望偏差回补
-          <span class="hint">出现次数低于期望的号码靠前（大数回归）</span></label>
+          <span class="hint">大数回归为主 + 适度遗漏回补</span></label>
       </div>
       <div class="ctrl-row">
         <label>预测数据范围
@@ -179,21 +184,20 @@
             <option value="1000" selected>最近 1000 期</option>
           </select>
         </label>
-        <label>EWMA 半衰期
+        <label id="ewmaHalfWrap" class="hidden">EWMA 半衰期
           <select id="ewmaHalfSelect">
             <option value="20" selected>20 期</option>
             <option value="50">50 期</option>
             <option value="100">100 期</option>
           </select>
         </label>
-        <span class="hint">基于所选期数范围统计并预测（与趋势页窗口相互独立）；EWMA 半衰期仅「EWMA 近期加权」模型生效</span>
+        <span class="hint">预测数据范围与趋势页窗口相互独立，三种分析模式共用</span>
       </div>
       <div class="btn-row">
-        <button id="btnPredict" class="btn primary">开始预测下一期</button>
-        <button id="btnEnsemble" class="btn">⚖ 集成投票</button>
-        <button id="btnStructure" class="btn">📊 组合结构预测</button>
+        <button id="btnPredict" class="btn primary">开始分析</button>
         <button id="btnPredSim" class="btn" disabled>按预测概率模拟 10 注</button>
       </div>
+      <p class="hint">💡 <b>操作方式：</b>先选「分析模式」（① 单模型预测 / ② 集成投票 / ③ 组合结构预测）→ 模式① 再选下方模型预设与 EWMA 半衰期 → 选择预测数据范围 → 点「开始分析」。结果只显示在下方的对应卡片中，三种模式互不叠加。</p>
     </div>
 
     <div id="predResult" class="hidden">

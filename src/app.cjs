@@ -607,6 +607,27 @@ function selectRed(n) {
 }
 
 /* ---------------- 预测页 ---------------- */
+/* 分析模式：① 单模型预测 / ② 集成投票 / ③ 组合结构预测 —— 结果区互斥显示 */
+function runAnalyze() {
+  const mode = document.querySelector('input[name="analyzeMode"]:checked').value;
+  if (mode === "ensemble") return runEnsemble();
+  if (mode === "structure") return runStructure();
+  return runPredict();
+}
+
+/* 仅「单模型预测」模式显示模型预设区 */
+function togglePresetGroup() {
+  const mode = document.querySelector('input[name="analyzeMode"]:checked').value;
+  $("presetGroup").classList.toggle("hidden", mode !== "predict");
+  toggleEwmaHalf();
+}
+
+/* 仅选中「EWMA 近期加权」预设时显示半衰期选择 */
+function toggleEwmaHalf() {
+  const ewma = document.querySelector('input[name="preset"]:checked');
+  $("ewmaHalfWrap").classList.toggle("hidden", !(ewma && ewma.value === "ewma"));
+}
+
 function runPredict() {
   const key = document.querySelector('input[name="preset"]:checked').value;
   // 预测数据范围：独立下拉选择（最近 50~1000 期），与趋势页窗口互不影响；EWMA 半衰期可选
@@ -649,6 +670,7 @@ function runPredict() {
     ]));
   });
   $("predResult").classList.remove("hidden");
+  $("structResult").classList.add("hidden");
   $("btnPredSim").disabled = false;
 }
 
@@ -694,6 +716,7 @@ function runEnsemble() {
     blue: Array.from({ length: 16 }, (_, i) => i + 1).map(n => ({ n, p: (en.blue.find(b => b.n === n) || {}).p || 0 }))
   };
   $("predResult").classList.remove("hidden");
+  $("structResult").classList.add("hidden");
   $("btnPredSim").disabled = false;
 }
 
@@ -725,6 +748,8 @@ function runStructure() {
     box.appendChild(row);
   });
   $("structResult").classList.remove("hidden");
+  $("predResult").classList.add("hidden");
+  $("btnPredSim").disabled = true;
 }
 
 function renderStructList(id, rows, label) {
@@ -1063,10 +1088,11 @@ function init() {
   $("heatSelect").onchange = renderHeat;
 
   // 预测
-  $("btnPredict").onclick = runPredict;
-  $("btnEnsemble").onclick = runEnsemble;
-  $("btnStructure").onclick = runStructure;
+  $("btnPredict").onclick = runAnalyze;
   $("btnPredSim").onclick = runPredSim;
+  document.querySelectorAll('input[name="analyzeMode"]').forEach(r => r.onchange = togglePresetGroup);
+  document.querySelectorAll('input[name="preset"]').forEach(r => r.onchange = toggleEwmaHalf);
+  togglePresetGroup(); // 初始状态：单模型预测 + 非 ewma 预设 → 半衰期隐藏
 
   // 随机
   $("btnRand").onclick = () => {
