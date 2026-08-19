@@ -505,8 +505,12 @@ function selectRed(n) {
 /* ---------------- 预测页 ---------------- */
 function runPredict() {
   const key = document.querySelector('input[name="preset"]:checked').value;
-  LAST_PRED = predict(STATS, key);
-  $("predModelName").textContent = `模型：${LAST_PRED.model}`;
+  // 预测数据范围：独立下拉选择（最近 100/200/500/1000 期），与趋势页窗口互不影响
+  const w = Math.min(1000, Math.max(10, parseInt($("predWinSelect").value, 10) || 1000));
+  const stats = computeStats(DRAW_DATA, w);
+  LAST_PRED = predict(stats, key);
+  const first = stats.draws[0], last = stats.draws[stats.draws.length - 1];
+  $("predModelName").textContent = `模型：${LAST_PRED.model}（数据：最近 ${stats.windowSize} 期，${first.issue} ~ ${last.issue}）`;
   const rec = LAST_PRED.rec;
   const recBox = $("predRec");
   recBox.innerHTML = "";

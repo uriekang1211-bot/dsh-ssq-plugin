@@ -159,6 +159,17 @@
         <label class="radio"><input type="radio" name="preset" value="hot"> 热号延续
           <span class="hint">侧重近期高频出现的号码</span></label>
       </div>
+      <div class="ctrl-row">
+        <label>预测数据范围
+          <select id="predWinSelect">
+            <option value="100">最近 100 期</option>
+            <option value="200">最近 200 期</option>
+            <option value="500">最近 500 期</option>
+            <option value="1000" selected>最近 1000 期</option>
+          </select>
+        </label>
+        <span class="hint">基于所选期数范围内的历史数据统计并预测（与趋势页窗口相互独立）</span>
+      </div>
       <div class="btn-row">
         <button id="btnPredict" class="btn primary">开始预测下一期</button>
         <button id="btnPredSim" class="btn" disabled>按预测概率模拟 10 注</button>

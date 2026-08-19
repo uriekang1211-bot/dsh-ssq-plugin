@@ -273,6 +273,17 @@ canvas{width:100%;display:block}
         <label class="radio"><input type="radio" name="preset" value="hot"> 热号延续
           <span class="hint">侧重近期高频出现的号码</span></label>
       </div>
+      <div class="ctrl-row">
+        <label>预测数据范围
+          <select id="predWinSelect">
+            <option value="100">最近 100 期</option>
+            <option value="200">最近 200 期</option>
+            <option value="500">最近 500 期</option>
+            <option value="1000" selected>最近 1000 期</option>
+          </select>
+        </label>
+        <span class="hint">基于所选期数范围内的历史数据统计并预测（与趋势页窗口相互独立）</span>
+      </div>
       <div class="btn-row">
         <button id="btnPredict" class="btn primary">开始预测下一期</button>
         <button id="btnPredSim" class="btn" disabled>按预测概率模拟 10 注</button>
@@ -882,8 +893,12 @@ function selectRed(n) {
 /* ---------------- 预测页 ---------------- */
 function runPredict() {
   const key = document.querySelector('input[name="preset"]:checked').value;
-  LAST_PRED = predict(STATS, key);
-  $("predModelName").textContent = `模型：${LAST_PRED.model}`;
+  // 预测数据范围：独立下拉选择（最近 100/200/500/1000 期），与趋势页窗口互不影响
+  const w = Math.min(1000, Math.max(10, parseInt($("predWinSelect").value, 10) || 1000));
+  const stats = computeStats(DRAW_DATA, w);
+  LAST_PRED = predict(stats, key);
+  const first = stats.draws[0], last = stats.draws[stats.draws.length - 1];
+  $("predModelName").textContent = `模型：${LAST_PRED.model}（数据：最近 ${stats.windowSize} 期，${first.issue} ~ ${last.issue}）`;
   const rec = LAST_PRED.rec;
   const recBox = $("predRec");
   recBox.innerHTML = "";
