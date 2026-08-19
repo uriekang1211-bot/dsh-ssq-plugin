@@ -112,3 +112,88 @@ canvas{width:100%;display:block}
 /* ---- misc ---- */
 .warn-card{background:#fff8ec;border-color:#f3ddb0}
 .disclaimer{font-size:12px;color:var(--muted);text-align:center;margin:26px 0 0}
+
+/* ============================================================
+ * 移动端适配（<= 640px）：底部导航 / 纵向控件 / 大触控目标 / 表格与热力图横滚
+ * ============================================================ */
+.heat{overflow-x:auto} /* 热力图超宽时横向滚动（桌面不触发，移动端必需） */
+
+@media (max-width:640px){
+  .wrap{padding:12px 12px 92px}
+  h1{font-size:18px}
+  h3{font-size:14px;margin-bottom:8px}
+  .head-row{gap:8px}
+  .head-sub{font-size:12px;line-height:1.5}
+  .head-actions{width:100%}
+  .head-actions .btn{flex:1;padding:8px 6px;font-size:12px;text-align:center}
+  .card{padding:12px;margin-bottom:12px;border-radius:10px}
+  .grid2{gap:12px}
+
+  /* ---- 底部固定导航（App 式） ---- */
+  .tabs{
+    position:fixed;left:0;right:0;bottom:0;z-index:60;margin:0;
+    padding:6px 8px calc(6px + env(safe-area-inset-bottom));
+    background:#fff;border-top:1px solid var(--line);border-radius:0;
+    gap:6px;flex-wrap:nowrap;
+    box-shadow:0 -2px 12px rgba(20,30,60,.10)
+  }
+  .tab-btn{flex:1;padding:9px 2px;border:none;background:transparent;color:var(--muted);
+    font-size:12px;border-radius:10px;white-space:nowrap;display:flex;flex-direction:column;
+    align-items:center;gap:2px}
+  .tab-btn:active{background:var(--warm-soft)}
+  .tab-btn.active{background:var(--red-soft);color:var(--red);box-shadow:none}
+  .tab-btn.active::before{content:"";width:24px;height:3px;border-radius:2px;background:var(--red);order:-1}
+
+  /* ---- 控件纵向化，触控目标 ≥ 40px ---- */
+  .ctrl-row{gap:10px;align-items:stretch}
+  .ctrl-row label{width:100%;min-height:40px;justify-content:space-between}
+  select,input[type=number]{padding:10px 10px;font-size:15px;border-radius:10px}
+  input[type=number]{width:84px}
+  textarea{font-size:14px}
+  .radio{width:auto!important;min-height:40px}
+  .btn{padding:11px 14px;font-size:14px;border-radius:10px}
+  .btn:active{transform:scale(.97)}
+  .btn-row{gap:8px}
+  .btn-row .btn{flex:1}
+  .btn-row .btn.primary{width:100%}
+  .legend{margin-top:2px}
+
+  /* 分析模式 3 列 / 模型预设 2 列 */
+  #modeGroup{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  #modeGroup .radio{width:100%!important;min-height:44px;border:1px solid var(--line);
+    border-radius:10px;justify-content:center;background:#fff}
+  #presetGroup{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  #presetGroup .radio{width:100%!important;min-height:44px;border:1px solid var(--line);
+    border-radius:10px;justify-content:flex-start;padding:8px 10px;background:#fff}
+  #presetGroup .radio .hint{display:none}
+
+  /* 胆拖模式 3 列 + 清空 */
+  #dtModeRow{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:center}
+  #dtModeRow .radio{width:100%!important;justify-content:center;min-height:44px;
+    border:1px solid var(--line);border-radius:10px;background:#fff}
+  #dtModeRow .btn{flex:0 0 auto;padding:11px 14px}
+
+  /* ---- 表格：更紧凑，横向滚动 ---- */
+  table{font-size:12px;min-width:560px}
+  th,td{padding:6px 8px}
+  .tbl-wrap{border-radius:8px;-webkit-overflow-scrolling:touch}
+  .prob-cell{min-width:96px}
+
+  /* ---- 号码网格：红球 6 列 / 蓝球 4 列，触控面积加大 ---- */
+  .num-grid{grid-template-columns:repeat(6,1fr);gap:8px}
+  .blue-grid{grid-template-columns:repeat(4,1fr)}
+  .num{padding:12px 0;font-size:15px;border-radius:10px}
+
+  /* ---- chips / 组合 ---- */
+  .chip{width:42px;height:42px;font-size:16px}
+  .combo{flex-wrap:wrap;padding:8px 10px;font-size:13px}
+  .combo .chip{width:32px;height:32px;font-size:13px}
+
+  /* ---- 热力图：适配小屏（横滚由 .heat overflow-x 处理） ---- */
+  .heat-label{min-width:44px;font-size:9px}
+  .heat-x{margin-left:48px}
+  .heat-cell{width:13px;height:13px;border-radius:2px}
+  .heat-x span{width:13px;font-size:8px}
+
+  .disclaimer{margin:18px 0 6px;padding:0 6px;font-size:11px;text-align:left}
+}

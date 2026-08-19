@@ -153,7 +153,7 @@
     </div>
     <div class="card">
       <h3>预测分析</h3>
-      <div class="ctrl-row">
+      <div class="ctrl-row" id="modeGroup">
         <label class="radio"><input type="radio" name="analyzeMode" value="predict" checked> ① 单模型预测</label>
         <label class="radio"><input type="radio" name="analyzeMode" value="ensemble"> ② 集成投票</label>
         <label class="radio"><input type="radio" name="analyzeMode" value="structure"> ③ 组合结构预测</label>
@@ -292,7 +292,7 @@
         <p class="hint">
           规则：胆码 <b>1–5 个</b>（每注必中）；拖码至少 <b>6 − 胆码数</b> 个；每注 = 全部胆码 + 从拖码中取足 6 个红球 + 1 个蓝球。
         </p>
-        <div class="ctrl-row">
+        <div class="ctrl-row" id="dtModeRow">
           <label class="radio"><input type="radio" name="dtmode" value="dan" checked> 选胆码</label>
           <label class="radio"><input type="radio" name="dtmode" value="tuo"> 选拖码</label>
           <label class="radio"><input type="radio" name="dtmode" value="blue"> 选蓝球</label>

@@ -28,7 +28,7 @@ dsh plugin --profile web remove dsh-ssq-plugin
 
 ## 快速开始（HTML 版）
 
-双击打开 **`dist/index.html`** 即可（Chrome / Edge / Safari 均可）。
+双击打开 **`dist/index.html`** 即可（Chrome / Edge / Safari 均可），**桌面与手机自适应**（手机屏幕自动切换为底部导航、纵向控件、大触控目标的移动端布局）。
 
 ## 三大功能
 
