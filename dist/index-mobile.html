@@ -2,9 +2,13 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>双色球助手 · 趋势追踪 · 智能预测 · 胆拖/随机选号</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>双色球助手 · 移动版</title>
 <style>
+/* ============================================================
+ * 双色球助手 · 移动版样式（独立文件，以手机屏幕为基准）
+ * 与桌面版共用 src/app.cjs 逻辑；此样式专为触屏优化。
+ * ============================================================ */
 :root{
   --bg:#f2f4f8; --card:#ffffff; --ink:#1c2430; --muted:#6b7686; --line:#e4e9f0;
   --red:#d63b3b; --red-deep:#b3261e; --red-soft:#fdecec;
@@ -12,63 +16,85 @@
   --warm:#e8952f; --warm-soft:#fdf3e3;
   --green:#2fa35c; --green-soft:#e9f7ef;
   --radius:12px; --shadow:0 1px 3px rgba(20,30,60,.06);
+  --tab-h:58px;
 }
-*{box-sizing:border-box}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Segoe UI",Roboto,sans-serif;line-height:1.55}
-.wrap{max-width:1120px;margin:0 auto;padding:22px 16px 70px}
-h1{font-size:22px;margin:0;letter-spacing:.5px}
-h3{font-size:15px;margin:0 0 10px}
-.head-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.head-sub{color:var(--muted);font-size:13px;margin:8px 0 0}
-.head-actions{display:flex;gap:8px;flex-wrap:wrap}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Segoe UI",Roboto,sans-serif;line-height:1.5;font-size:15px}
+.wrap{max-width:640px;margin:0 auto;padding:12px 12px calc(var(--tab-h) + 30px + env(safe-area-inset-bottom))}
+h1{font-size:18px;margin:0}
+h3{font-size:14px;margin:0 0 8px}
+.head-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.head-sub{color:var(--muted);font-size:12px;margin:6px 0 0;line-height:1.5}
 code{background:#eef1f6;padding:1px 6px;border-radius:5px;font-size:12px}
 
 .hidden{display:none!important}
 .hint{color:var(--muted);font-size:12px;margin:6px 0 0}
 .summary{font-size:13px;margin-top:10px;padding:8px 10px;background:#f7f9fc;border:1px dashed var(--line);border-radius:8px}
 
-/* ---- tabs ---- */
-.tabs{display:flex;gap:8px;margin:18px 0 16px;flex-wrap:wrap}
-.tab-btn{border:1px solid var(--line);background:var(--card);color:var(--muted);padding:9px 18px;border-radius:999px;font-size:14px;cursor:pointer;transition:all .15s}
-.tab-btn:hover{color:var(--ink);border-color:#c9d3e0}
-.tab-btn.active{background:var(--red);border-color:var(--red);color:#fff;font-weight:600;box-shadow:0 2px 8px rgba(214,59,59,.3)}
+/* ---- 底部固定导航（App 式） ---- */
+.tabs{
+  position:fixed;left:0;right:0;bottom:0;z-index:60;margin:0;
+  padding:6px 8px calc(6px + env(safe-area-inset-bottom));
+  background:#fff;border-top:1px solid var(--line);
+  display:flex;gap:6px;
+  box-shadow:0 -2px 12px rgba(20,30,60,.10)
+}
+.tab-btn{
+  flex:1;padding:9px 2px;border:none;background:transparent;color:var(--muted);
+  font-size:13px;border-radius:10px;white-space:nowrap;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:3px
+}
+.tab-btn:active{background:var(--warm-soft)}
+.tab-btn.active{background:var(--red-soft);color:var(--red);font-weight:600}
+.tab-btn.active::before{content:"";width:24px;height:3px;border-radius:2px;background:var(--red);order:-1}
 .panel{display:none}
 .panel.active{display:block;animation:fade .2s ease}
 @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 
 /* ---- cards ---- */
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:16px;box-shadow:var(--shadow)}
-.card-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px;box-shadow:var(--shadow)}
+.card.sub{margin-bottom:10px;padding:10px;border-radius:8px;box-shadow:none}
+.card-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px}
 .card-head h3{margin:0}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-@media (max-width:860px){.grid2{grid-template-columns:1fr}}
 
-/* ---- controls ---- */
-.ctrl-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-.ctrl-row label{font-size:13px;color:var(--ink);display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
-select,input[type=number]{font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+/* ---- controls（纵向、大触控） ---- */
+.ctrl-row{display:flex;align-items:stretch;gap:10px;flex-wrap:wrap}
+.ctrl-row label{font-size:14px;color:var(--ink);display:inline-flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;width:100%;min-height:44px}
+select,input[type=number]{font-size:15px;padding:10px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);flex:1;min-width:0}
 select:focus,input:focus{outline:2px solid var(--blue-soft);border-color:var(--blue)}
-input[type=number]{width:70px}
-textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;resize:vertical}
-.radio{display:inline-flex!important;align-items:center;gap:4px}
+input[type=number]{width:84px;flex:0 0 auto}
+textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;resize:vertical}
+.radio{display:inline-flex!important;align-items:center;gap:4px;width:auto!important;min-height:44px;justify-content:flex-start}
 .radio .hint{margin:0 0 0 4px}
-.btn{border:1px solid var(--line);background:#fff;color:var(--ink);padding:8px 16px;border-radius:9px;font-size:13px;cursor:pointer;transition:all .15s}
-.btn:hover{border-color:#c9d3e0;background:#f8fafc}
+.btn{border:1px solid var(--line);background:#fff;color:var(--ink);padding:11px 14px;border-radius:10px;font-size:14px;cursor:pointer;transition:all .15s}
+.btn:active{transform:scale(.97)}
 .btn.primary{background:var(--red);border-color:var(--red);color:#fff;font-weight:600}
-.btn.primary:hover{background:var(--red-deep)}
 .btn.primary:disabled,.btn:disabled{opacity:.45;cursor:not-allowed}
 .btn.ghost{background:transparent}
-.btn-row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
-.legend{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)}
+.btn-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.btn-row .btn{flex:1}
+.btn-row .btn.primary{width:100%}
+.legend{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);min-height:32px}
 .lg{width:10px;height:10px;border-radius:3px;display:inline-block}
 .lg.hot{background:var(--red)} .lg.warm{background:var(--warm)} .lg.cold{background:var(--blue)}
 
-/* ---- tables ---- */
-.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
-.tbl-wrap.scroll{max-height:420px;overflow-y:auto}
-table{border-collapse:collapse;width:100%;font-size:13px;min-width:640px}
-th,td{padding:7px 10px;text-align:center;border-bottom:1px solid var(--line);white-space:nowrap}
+/* 分析模式 3 列 / 模型预设 2 列（卡片化单选） */
+#modeGroup{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+#modeGroup .radio{width:100%!important;min-height:46px;border:1px solid var(--line);border-radius:10px;justify-content:center;background:#fff;font-size:13px}
+#presetGroup{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#presetGroup .radio{width:100%!important;min-height:46px;border:1px solid var(--line);border-radius:10px;justify-content:flex-start;padding:8px 10px;background:#fff;font-size:13px}
+
+/* 胆拖模式 3 列 + 清空 */
+#dtModeRow{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:center}
+#dtModeRow .radio{width:100%!important;justify-content:center;min-height:46px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:13px}
+#dtModeRow .btn{flex:0 0 auto;padding:11px 12px}
+
+/* ---- tables（横向滚动 + 表头吸附） ---- */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:8px}
+.tbl-wrap.scroll{max-height:400px;overflow-y:auto}
+table{border-collapse:collapse;width:100%;font-size:12px;min-width:560px}
+th,td{padding:7px 9px;text-align:center;border-bottom:1px solid var(--line);white-space:nowrap}
 th{background:#f7f9fc;color:var(--muted);font-weight:600;position:sticky;top:0;z-index:1}
 tbody tr:hover{background:#f8fafc}
 tbody tr.sel-row{background:var(--blue-soft)}
@@ -79,131 +105,56 @@ td.num,td.blue{font-weight:700}
 .badge.cold{background:var(--blue-soft);color:var(--blue)}
 .up{color:var(--red);font-weight:700}.down{color:var(--blue);font-weight:700}.flat{color:var(--muted)}
 .prob-bar{height:8px;border-radius:4px;background:var(--red);opacity:.85}
-.prob-cell{display:flex;align-items:center;gap:8px;min-width:120px}
+.prob-cell{display:flex;align-items:center;gap:8px;min-width:96px}
 .prob-cell .pval{min-width:52px;text-align:right;font-variant-numeric:tabular-nums}
 
 /* ---- charts ---- */
 canvas{width:100%;display:block}
 
-/* ---- heatmap ---- */
-.heat{display:flex;flex-direction:column;gap:3px;margin-top:8px}
+/* ---- heatmap（超宽横滚） ---- */
+.heat{display:flex;flex-direction:column;gap:3px;margin-top:8px;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .heat-row{display:flex;gap:2px;align-items:center}
-.heat-label{font-size:10px;color:var(--muted);min-width:64px;text-align:right;margin-right:4px;white-space:nowrap}
-.heat-cell{width:16px;height:16px;border-radius:3px;background:#eef1f6;flex:none}
+.heat-label{font-size:9px;color:var(--muted);min-width:44px;text-align:right;margin-right:4px;white-space:nowrap}
+.heat-cell{width:13px;height:13px;border-radius:2px;background:#eef1f6;flex:none}
 .heat-cell.on-red{background:var(--red)}
 .heat-cell.on-blue{background:var(--blue)}
-.heat-x{display:flex;gap:2px;margin-left:68px}
-.heat-x span{width:16px;font-size:9px;color:var(--muted);text-align:center;flex:none}
+.heat-x{display:flex;gap:2px;margin-left:48px}
+.heat-x span{width:13px;font-size:8px;color:var(--muted);text-align:center;flex:none}
 
 /* ---- chips / numbers ---- */
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-.chip{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;font-weight:700;font-size:15px;background:var(--red);color:#fff;box-shadow:0 2px 6px rgba(214,59,59,.35)}
+.chip{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;font-weight:700;font-size:16px;background:var(--red);color:#fff;box-shadow:0 2px 6px rgba(214,59,59,.35)}
 .chip.blue{background:var(--blue);box-shadow:0 2px 6px rgba(47,111,237,.35)}
 .chip.small{width:30px;height:30px;font-size:13px}
-.combo{display:flex;align-items:center;gap:5px;padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;margin:4px 0;font-size:14px}
+.combo{display:flex;align-items:center;flex-wrap:wrap;gap:5px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;margin:4px 0;font-size:13px}
 .combo b{color:var(--muted);font-weight:600;margin-right:4px}
-.combo .chip{width:30px;height:30px;font-size:13px;box-shadow:none}
+.combo .chip{width:32px;height:32px;font-size:13px;box-shadow:none}
 .combo .chip.blue{background:var(--blue)}
 .chips-col{margin-top:10px}
 .gen-count{color:var(--muted);font-size:12px;margin:6px 0 2px}
 
-/* ---- number grid (胆拖选择) ---- */
-.num-grid{display:grid;grid-template-columns:repeat(11,1fr);gap:6px;margin:6px 0 12px}
-.blue-grid{grid-template-columns:repeat(8,1fr)}
-.num{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 0;font-size:13px;font-weight:600;cursor:pointer;transition:all .12s;color:var(--ink)}
-.num:hover{border-color:#c9d3e0;background:#f8fafc}
+/* ---- number grid（红球 6 列 / 蓝球 4 列，大触控） ---- */
+.num-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:6px 0 12px}
+.blue-grid{grid-template-columns:repeat(4,1fr)}
+.num{border:1px solid var(--line);background:#fff;border-radius:10px;padding:12px 0;font-size:15px;font-weight:600;cursor:pointer;transition:all .12s;color:var(--ink)}
+.num:active{transform:scale(.95)}
 .num.dan{background:var(--red);border-color:var(--red);color:#fff}
 .num.tuo{background:var(--warm-soft);border-color:var(--warm);color:#a8640e}
 .num.blue-sel{background:var(--blue);border-color:var(--blue);color:#fff}
 
+/* ---- struct list（结构预测） ---- */
+.struct-list{margin-top:6px}
+.struct-row{display:flex;align-items:center;gap:8px;padding:7px 2px;border-bottom:1px solid var(--line);font-size:13px}
+.struct-row:last-child{border-bottom:none}
+.struct-row.top{color:var(--red);font-weight:700}
+.struct-key{min-width:76px;flex:none}
+.struct-bar{display:inline-block;height:10px;border-radius:5px;background:#c9d2de}
+.struct-row.top .struct-bar{background:var(--red)}
+.struct-freq{color:var(--muted);font-size:12px;margin-left:auto;flex:none}
+
 /* ---- misc ---- */
 .warn-card{background:#fff8ec;border-color:#f3ddb0}
-.disclaimer{font-size:12px;color:var(--muted);text-align:center;margin:26px 0 0}
-
-/* ============================================================
- * 移动端适配（<= 640px）：底部导航 / 纵向控件 / 大触控目标 / 表格与热力图横滚
- * ============================================================ */
-.heat{overflow-x:auto} /* 热力图超宽时横向滚动（桌面不触发，移动端必需） */
-
-@media (max-width:640px){
-  .wrap{padding:12px 12px 92px}
-  h1{font-size:18px}
-  h3{font-size:14px;margin-bottom:8px}
-  .head-row{gap:8px}
-  .head-sub{font-size:12px;line-height:1.5}
-  .head-actions{width:100%}
-  .head-actions .btn{flex:1;padding:8px 6px;font-size:12px;text-align:center}
-  .card{padding:12px;margin-bottom:12px;border-radius:10px}
-  .grid2{gap:12px}
-
-  /* ---- 底部固定导航（App 式） ---- */
-  .tabs{
-    position:fixed;left:0;right:0;bottom:0;z-index:60;margin:0;
-    padding:6px 8px calc(6px + env(safe-area-inset-bottom));
-    background:#fff;border-top:1px solid var(--line);border-radius:0;
-    gap:6px;flex-wrap:nowrap;
-    box-shadow:0 -2px 12px rgba(20,30,60,.10)
-  }
-  .tab-btn{flex:1;padding:9px 2px;border:none;background:transparent;color:var(--muted);
-    font-size:12px;border-radius:10px;white-space:nowrap;display:flex;flex-direction:column;
-    align-items:center;gap:2px}
-  .tab-btn:active{background:var(--warm-soft)}
-  .tab-btn.active{background:var(--red-soft);color:var(--red);box-shadow:none}
-  .tab-btn.active::before{content:"";width:24px;height:3px;border-radius:2px;background:var(--red);order:-1}
-
-  /* ---- 控件纵向化，触控目标 ≥ 40px ---- */
-  .ctrl-row{gap:10px;align-items:stretch}
-  .ctrl-row label{width:100%;min-height:40px;justify-content:space-between}
-  select,input[type=number]{padding:10px 10px;font-size:15px;border-radius:10px}
-  input[type=number]{width:84px}
-  textarea{font-size:14px}
-  .radio{width:auto!important;min-height:40px}
-  .btn{padding:11px 14px;font-size:14px;border-radius:10px}
-  .btn:active{transform:scale(.97)}
-  .btn-row{gap:8px}
-  .btn-row .btn{flex:1}
-  .btn-row .btn.primary{width:100%}
-  .legend{margin-top:2px}
-
-  /* 分析模式 3 列 / 模型预设 2 列 */
-  #modeGroup{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-  #modeGroup .radio{width:100%!important;min-height:44px;border:1px solid var(--line);
-    border-radius:10px;justify-content:center;background:#fff}
-  #presetGroup{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  #presetGroup .radio{width:100%!important;min-height:44px;border:1px solid var(--line);
-    border-radius:10px;justify-content:flex-start;padding:8px 10px;background:#fff}
-  #presetGroup .radio .hint{display:none}
-
-  /* 胆拖模式 3 列 + 清空 */
-  #dtModeRow{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:center}
-  #dtModeRow .radio{width:100%!important;justify-content:center;min-height:44px;
-    border:1px solid var(--line);border-radius:10px;background:#fff}
-  #dtModeRow .btn{flex:0 0 auto;padding:11px 14px}
-
-  /* ---- 表格：更紧凑，横向滚动 ---- */
-  table{font-size:12px;min-width:560px}
-  th,td{padding:6px 8px}
-  .tbl-wrap{border-radius:8px;-webkit-overflow-scrolling:touch}
-  .prob-cell{min-width:96px}
-
-  /* ---- 号码网格：红球 6 列 / 蓝球 4 列，触控面积加大 ---- */
-  .num-grid{grid-template-columns:repeat(6,1fr);gap:8px}
-  .blue-grid{grid-template-columns:repeat(4,1fr)}
-  .num{padding:12px 0;font-size:15px;border-radius:10px}
-
-  /* ---- chips / 组合 ---- */
-  .chip{width:42px;height:42px;font-size:16px}
-  .combo{flex-wrap:wrap;padding:8px 10px;font-size:13px}
-  .combo .chip{width:32px;height:32px;font-size:13px}
-
-  /* ---- 热力图：适配小屏（横滚由 .heat overflow-x 处理） ---- */
-  .heat-label{min-width:44px;font-size:9px}
-  .heat-x{margin-left:48px}
-  .heat-cell{width:13px;height:13px;border-radius:2px}
-  .heat-x span{width:13px;font-size:8px}
-
-  .disclaimer{margin:18px 0 6px;padding:0 6px;font-size:11px;text-align:left}
-}
+.disclaimer{font-size:11px;color:var(--muted);margin:18px 0 6px;padding:0 4px;text-align:left;line-height:1.6}
 
 </style>
 </head>
@@ -213,30 +164,17 @@ canvas{width:100%;display:block}
   <header>
     <div class="head-row">
       <h1>🎱 双色球助手</h1>
-      <div class="head-actions">
-        <button id="btnOnline" class="btn ghost" title="尝试从中国福彩官网接口拉取最新数据">在线更新</button>
-        <button id="btnExport" class="btn ghost" title="把当前数据导出为 JSON 文件，日后可再导入">导出数据</button>
-        <button id="btnImport" class="btn ghost" title="粘贴或导入 JSON 数据">导入数据</button>
-      </div>
+      <button id="btnOnline" class="btn ghost">在线更新</button>
     </div>
     <p class="head-sub">
-      数据源：中国福利彩票发行管理中心（cwl.gov.cn）｜
-      窗口：最近 <b id="dataCount">–</b> 期（<b id="dataOldest">–</b> ~ <b id="dataLatest">–</b>）
+      数据源：cwl.gov.cn ｜ 窗口：最近 <b id="dataCount">–</b> 期（<b id="dataOldest">–</b> ~ <b id="dataLatest">–</b>）
     </p>
-    <div id="importPanel" class="card hidden">
-      <p>将「双色球历史数据 JSON」（形如 <code>{"result":[{"code":"2026094","red":"06,13,15,17,24,25","blue":"01"}, ...]}</code>，最新期在前）粘贴到下面：</p>
-      <textarea id="importText" rows="6" placeholder='{"result":[{...}]}'></textarea>
-      <div class="btn-row">
-        <button id="btnImportGo" class="btn primary">导入并重新统计</button>
-        <button id="btnImportClose" class="btn ghost">取消</button>
-      </div>
-    </div>
   </header>
 
   <nav class="tabs">
-    <button class="tab-btn active" data-tab="tab-trend">📈 趋势追踪</button>
-    <button class="tab-btn" data-tab="tab-predict">🎯 智能预测</button>
-    <button class="tab-btn" data-tab="tab-gen">🎲 选号生成</button>
+    <button class="tab-btn active" data-tab="tab-trend">趋势</button>
+    <button class="tab-btn" data-tab="tab-predict">预测</button>
+    <button class="tab-btn" data-tab="tab-gen">选号</button>
   </nav>
 
   <!-- ==================== 趋势追踪 ==================== -->
@@ -275,33 +213,31 @@ canvas{width:100%;display:block}
           </select>
         </label>
         <span class="legend">
-          <i class="lg hot"></i>热号 <i class="lg warm"></i>温号 <i class="lg cold"></i>冷号
+          <i class="lg hot"></i>热 <i class="lg warm"></i>温 <i class="lg cold"></i>冷
         </span>
       </div>
     </div>
 
-    <div class="grid2">
-      <div class="card">
-        <h3>红球（1–33）出现次数分布</h3>
-        <canvas id="redBars" height="230"></canvas>
-        <p class="hint">点击柱子可查看该号码的走势曲线</p>
-      </div>
-      <div class="card">
-        <h3>蓝球（1–16）出现次数分布</h3>
-        <canvas id="blueBars" height="230"></canvas>
-      </div>
+    <div class="card">
+      <h3>红球（1–33）出现次数分布</h3>
+      <canvas id="redBars" height="200"></canvas>
+      <p class="hint">点击柱子查看该号码走势</p>
+    </div>
+    <div class="card">
+      <h3>蓝球（1–16）出现次数分布</h3>
+      <canvas id="blueBars" height="180"></canvas>
     </div>
 
     <div class="card">
       <div class="card-head">
-        <h3>红球明细（点击行查看走势）</h3>
+        <h3>红球明细（点行看走势）</h3>
         <span id="redStatInfo" class="hint"></span>
       </div>
       <div class="tbl-wrap">
         <table>
           <thead><tr>
-            <th>号码</th><th>次数</th><th>频率</th><th>近10期</th><th>当前遗漏</th>
-            <th>最大遗漏</th><th>平均遗漏</th><th>状态</th><th>趋势</th>
+            <th>号码</th><th>次数</th><th>频率</th><th>近10</th><th>遗漏</th>
+            <th>最大</th><th>平均</th><th>状态</th><th>趋势</th>
           </tr></thead>
           <tbody id="redTableBody"></tbody>
         </table>
@@ -316,23 +252,21 @@ canvas{width:100%;display:block}
       <div class="tbl-wrap">
         <table>
           <thead><tr>
-            <th>号码</th><th>次数</th><th>频率</th><th>近10期</th><th>当前遗漏</th>
-            <th>最大遗漏</th><th>平均遗漏</th><th>状态</th><th>趋势</th>
+            <th>号码</th><th>次数</th><th>频率</th><th>近10</th><th>遗漏</th>
+            <th>最大</th><th>平均</th><th>状态</th><th>趋势</th>
           </tr></thead>
           <tbody id="blueTableBody"></tbody>
         </table>
       </div>
     </div>
 
-    <div class="grid2">
-      <div class="card">
-        <h3>红球出现热力图</h3>
-        <div id="redHeat" class="heat"></div>
-      </div>
-      <div class="card">
-        <h3>蓝球出现热力图</h3>
-        <div id="blueHeat" class="heat"></div>
-      </div>
+    <div class="card">
+      <h3>红球出现热力图</h3>
+      <div id="redHeat" class="heat"></div>
+    </div>
+    <div class="card">
+      <h3>蓝球出现热力图</h3>
+      <div id="blueHeat" class="heat"></div>
     </div>
 
     <div class="card">
@@ -340,36 +274,29 @@ canvas{width:100%;display:block}
         <h3 id="selTitle">单号走势（滚动 10 期出现频率）</h3>
         <span id="selDetail" class="hint"></span>
       </div>
-      <canvas id="lineChart" height="220"></canvas>
+      <canvas id="lineChart" height="200"></canvas>
     </div>
   </section>
 
   <!-- ==================== 智能预测 ==================== -->
   <section id="tab-predict" class="panel">
     <div class="card warn-card">
-      ⚠️ <b>理性提示：</b>双色球每次开奖均为独立随机事件，任何统计方法都无法提高中奖概率。
-      以下预测仅基于历史频率/遗漏等信号的<b>娱乐性估算</b>，请量力而行、理性购彩。
+      ⚠️ <b>理性提示：</b>开奖为独立随机事件，预测仅作<b>娱乐性估算</b>，请理性购彩。
     </div>
     <div class="card">
       <h3>预测分析</h3>
       <div class="ctrl-row" id="modeGroup">
-        <label class="radio"><input type="radio" name="analyzeMode" value="predict" checked> ① 单模型预测</label>
+        <label class="radio"><input type="radio" name="analyzeMode" value="predict" checked> ① 单模型</label>
         <label class="radio"><input type="radio" name="analyzeMode" value="ensemble"> ② 集成投票</label>
-        <label class="radio"><input type="radio" name="analyzeMode" value="structure"> ③ 组合结构预测</label>
+        <label class="radio"><input type="radio" name="analyzeMode" value="structure"> ③ 结构预测</label>
       </div>
       <div id="presetGroup" class="ctrl-row">
-        <label class="radio"><input type="radio" name="preset" value="balanced" checked> 均衡混合
-          <span class="hint">频率 40% · 近期 30% · 遗漏回补 30%</span></label>
-        <label class="radio"><input type="radio" name="preset" value="cold"> 冷号回补
-          <span class="hint">侧重当前遗漏超期未出的号码</span></label>
-        <label class="radio"><input type="radio" name="preset" value="hot"> 热号延续
-          <span class="hint">侧重近期高频出现的号码</span></label>
-        <label class="radio"><input type="radio" name="preset" value="ewma"> EWMA 近期加权
-          <span class="hint">指数加权突出近期走势，半衰期可调</span></label>
-        <label class="radio"><input type="radio" name="preset" value="miss"> 遗漏均值回归
-          <span class="hint">超期未出为主 + 少量频率混合</span></label>
-        <label class="radio"><input type="radio" name="preset" value="expect"> 期望偏差回补
-          <span class="hint">大数回归为主 + 适度遗漏回补</span></label>
+        <label class="radio"><input type="radio" name="preset" value="balanced" checked> 均衡混合</label>
+        <label class="radio"><input type="radio" name="preset" value="cold"> 冷号回补</label>
+        <label class="radio"><input type="radio" name="preset" value="hot"> 热号延续</label>
+        <label class="radio"><input type="radio" name="preset" value="ewma"> EWMA 加权</label>
+        <label class="radio"><input type="radio" name="preset" value="miss"> 遗漏回归</label>
+        <label class="radio"><input type="radio" name="preset" value="expect"> 期望回补</label>
       </div>
       <div class="ctrl-row">
         <label>预测数据范围
@@ -390,13 +317,12 @@ canvas{width:100%;display:block}
             <option value="100">100 期</option>
           </select>
         </label>
-        <span class="hint">预测数据范围与趋势页窗口相互独立，三种分析模式共用</span>
       </div>
       <div class="btn-row">
         <button id="btnPredict" class="btn primary">开始分析</button>
-        <button id="btnPredSim" class="btn" disabled>按预测概率模拟 10 注</button>
+        <button id="btnPredSim" class="btn" disabled>模拟 10 注</button>
       </div>
-      <p class="hint">💡 <b>操作方式：</b>先选「分析模式」（① 单模型预测 / ② 集成投票 / ③ 组合结构预测）→ 模式① 再选下方模型预设与 EWMA 半衰期 → 选择预测数据范围 → 点「开始分析」。结果只显示在下方的对应卡片中，三种模式互不叠加。</p>
+      <p class="hint">💡 选分析模式 →（模式①）选模型 → 选数据范围 → 开始分析。三种模式结果互不叠加。</p>
     </div>
 
     <div id="predResult" class="hidden">
@@ -409,29 +335,27 @@ canvas{width:100%;display:block}
         <p id="predBlueAlt" class="hint"></p>
       </div>
 
-      <div class="grid2">
-        <div class="card">
-          <h3>红球预测概率排名</h3>
-          <div class="tbl-wrap scroll">
-            <table>
-              <thead><tr><th>排名</th><th>号码</th><th>预测概率</th><th>下期期望次数</th><th>信号分解</th></tr></thead>
-              <tbody id="predRedBody"></tbody>
-            </table>
-          </div>
+      <div class="card">
+        <h3>红球预测概率排名</h3>
+        <div class="tbl-wrap scroll">
+          <table>
+            <thead><tr><th>排名</th><th>号码</th><th>概率</th><th>期望</th><th>信号</th></tr></thead>
+            <tbody id="predRedBody"></tbody>
+          </table>
         </div>
-        <div class="card">
-          <h3>蓝球预测概率排名</h3>
-          <div class="tbl-wrap scroll">
-            <table>
-              <thead><tr><th>排名</th><th>号码</th><th>预测概率</th><th>信号分解</th></tr></thead>
-              <tbody id="predBlueBody"></tbody>
-            </table>
-          </div>
+      </div>
+      <div class="card">
+        <h3>蓝球预测概率排名</h3>
+        <div class="tbl-wrap scroll">
+          <table>
+            <thead><tr><th>排名</th><th>号码</th><th>概率</th><th>信号</th></tr></thead>
+            <tbody id="predBlueBody"></tbody>
+          </table>
         </div>
       </div>
 
       <div class="card">
-        <h3>预测模拟号码（按概率加权随机）</h3>
+        <h3>预测模拟号码（按概率加权）</h3>
         <div id="predSim" class="chips-col"></div>
       </div>
     </div>
@@ -442,29 +366,25 @@ canvas{width:100%;display:block}
           <h3>📊 组合结构预测</h3>
           <span id="structModelName" class="hint"></span>
         </div>
-        <p class="hint">基于所选期数范围内的历史开奖，统计下一期红球最可能的<strong>结构特征</strong>（奇偶比 / 大小比 / 三区间 / 和值区间），并给出按最可能结构筛选的选号组合。</p>
-        <div class="grid2">
-          <div class="card">
-            <h3>奇偶比历史频率</h3>
-            <div id="structOddEven" class="struct-list"></div>
-          </div>
-          <div class="card">
-            <h3>大小比历史频率</h3>
-            <div id="structSize" class="struct-list"></div>
-          </div>
+        <p class="hint">统计所选期内红球的奇偶比 / 大小比 / 三区间 / 和值分布，按最可能结构生成选号。</p>
+        <div class="card sub">
+          <h3>奇偶比频率</h3>
+          <div id="structOddEven" class="struct-list"></div>
         </div>
-        <div class="grid2">
-          <div class="card">
-            <h3>三区间分布历史频率</h3>
-            <div id="structZone" class="struct-list"></div>
-          </div>
-          <div class="card">
-            <h3>和值区间历史频率</h3>
-            <div id="structSum" class="struct-list"></div>
-          </div>
+        <div class="card sub">
+          <h3>大小比频率</h3>
+          <div id="structSize" class="struct-list"></div>
         </div>
-        <div class="card">
-          <h3>按最可能结构筛选的 5 注</h3>
+        <div class="card sub">
+          <h3>三区间频率</h3>
+          <div id="structZone" class="struct-list"></div>
+        </div>
+        <div class="card sub">
+          <h3>和值区间频率</h3>
+          <div id="structSum" class="struct-list"></div>
+        </div>
+        <div class="card sub">
+          <h3>按最可能结构筛选 5 注</h3>
           <div id="structCombos" class="chips-col"></div>
         </div>
       </div>
@@ -473,55 +393,48 @@ canvas{width:100%;display:block}
 
   <!-- ==================== 选号生成 ==================== -->
   <section id="tab-gen" class="panel">
-    <div class="grid2">
-      <div class="card">
-        <h3>🎲 纯随机选号</h3>
-        <p class="hint">完全随机生成 6 个红球（1–33）+ 1 个蓝球（1–16）。</p>
-        <div class="ctrl-row">
-          <label>注数
-            <input id="randCount" type="number" min="1" max="50" value="5">
-          </label>
-          <button id="btnRand" class="btn primary">随机生成</button>
-        </div>
-        <div id="randResult" class="chips-col"></div>
+    <div class="card">
+      <h3>🎲 纯随机选号</h3>
+      <p class="hint">随机生成 6 红（1–33）+ 1 蓝（1–16）。</p>
+      <div class="ctrl-row">
+        <label>注数
+          <input id="randCount" type="number" min="1" max="50" value="5">
+        </label>
+        <button id="btnRand" class="btn primary">随机生成</button>
       </div>
+      <div id="randResult" class="chips-col"></div>
+    </div>
 
-      <div class="card">
-        <h3>🎯 胆拖选号（双色球胆拖规则）</h3>
-        <p class="hint">
-          规则：胆码 <b>1–5 个</b>（每注必中）；拖码至少 <b>6 − 胆码数</b> 个；每注 = 全部胆码 + 从拖码中取足 6 个红球 + 1 个蓝球。
-        </p>
-        <div class="ctrl-row" id="dtModeRow">
-          <label class="radio"><input type="radio" name="dtmode" value="dan" checked> 选胆码</label>
-          <label class="radio"><input type="radio" name="dtmode" value="tuo"> 选拖码</label>
-          <label class="radio"><input type="radio" name="dtmode" value="blue"> 选蓝球</label>
-          <button id="btnDtClear" class="btn ghost">清空</button>
-        </div>
-        <p class="hint">红球：</p>
-        <div id="danGrid" class="num-grid"></div>
-        <p class="hint">蓝球：</p>
-        <div id="blueGrid" class="num-grid blue-grid"></div>
-        <div id="dtSummary" class="summary"></div>
-        <div class="ctrl-row">
-          <button id="btnDtAll" class="btn primary">生成全部组合</button>
-          <label>随机抽
-            <input id="dtSample" type="number" min="1" max="100" value="5"> 注
-          </label>
-          <button id="btnDtSample" class="btn">抽取</button>
-          <button id="btnDtDownload" class="btn ghost hidden">导出全部为 .txt</button>
-        </div>
-        <div id="dtResult" class="chips-col"></div>
+    <div class="card">
+      <h3>🎯 胆拖选号</h3>
+      <p class="hint">胆码 1–5 个（每注必中）；拖码 ≥ 6−胆码数；每注 = 胆码 + 拖码补足 6 红 + 1 蓝。</p>
+      <div class="ctrl-row" id="dtModeRow">
+        <label class="radio"><input type="radio" name="dtmode" value="dan" checked> 选胆码</label>
+        <label class="radio"><input type="radio" name="dtmode" value="tuo"> 选拖码</label>
+        <label class="radio"><input type="radio" name="dtmode" value="blue"> 选蓝球</label>
+        <button id="btnDtClear" class="btn ghost">清空</button>
       </div>
+      <p class="hint">红球：</p>
+      <div id="danGrid" class="num-grid"></div>
+      <p class="hint">蓝球：</p>
+      <div id="blueGrid" class="num-grid blue-grid"></div>
+      <div id="dtSummary" class="summary"></div>
+      <div class="ctrl-row">
+        <button id="btnDtAll" class="btn primary">生成全部</button>
+        <label>随机抽
+          <input id="dtSample" type="number" min="1" max="100" value="5"> 注
+        </label>
+        <button id="btnDtSample" class="btn">抽取</button>
+        <button id="btnDtDownload" class="btn ghost hidden">导出 .txt</button>
+      </div>
+      <div id="dtResult" class="chips-col"></div>
     </div>
   </section>
 
   <footer>
     <p class="disclaimer">
-      ⚠️ 本工具仅供学习与娱乐参考，不构成任何投注建议。彩票开奖为独立随机事件，
-      请理性购彩、量力而行，未成年人禁止购彩。<br>
-      <span class="hint">数据来源：中国福利彩票发行管理中心公开开奖公告（cwl.gov.cn）及其每日更新的 GitHub 镜像。
-      更新数据：点「在线更新」（自动多源降级：官方直连 → GitHub 镜像 → CDN）；仍失败可运行本机脚本
-      <code>node update-data.mjs</code> 一键更新，或用「导出数据 / 导入数据」手动替换。</span>
+      ⚠️ 本工具仅供学习与娱乐参考，不构成投注建议。开奖为独立随机事件，请理性购彩。<br>
+      <span class="hint">数据来源：cwl.gov.cn 及其 GitHub 镜像；点「在线更新」拉取最新数据。</span>
     </p>
   </footer>
 </div>

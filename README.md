@@ -28,7 +28,8 @@ dsh plugin --profile web remove dsh-ssq-plugin
 
 ## 快速开始（HTML 版）
 
-双击打开 **`dist/index.html`** 即可（Chrome / Edge / Safari 均可），**桌面与手机自适应**（手机屏幕自动切换为底部导航、纵向控件、大触控目标的移动端布局）。
+双击打开 **`dist/index.html`** 即可（桌面，Chrome / Edge / Safari 均可）。
+手机访问请打开 **`dist/index-mobile.html`**（移动版，底部导航 + 大触控目标，已去掉导入/导出按钮）。
 
 ## 三大功能
 
@@ -93,12 +94,15 @@ dsh-ssq-plugin/
 ├── lib/index.js        ← DSH 插件入口（注册 ssq 聊天工具）
 ├── lib/ssq-core.js     ← 插件版核心逻辑（ESM）
 ├── data/ssq-history.json ← 插件内置数据快照
-├── dist/index.html     ← HTML 版成品（单文件，直接打开）
-├── template.html       ← HTML 版页面模板
-├── src/style.css       ← HTML 版样式
-├── src/app.cjs         ← HTML 版核心逻辑（统计 / 预测 / 胆拖随机）
+├── dist/index.html     ← HTML 版成品（桌面版，单文件）
+├── dist/index-mobile.html ← HTML 版成品（移动版，单文件，无导入导出）
+├── template.html       ← HTML 版桌面模板
+├── template-mobile.html ← HTML 版移动模板
+├── src/style.css       ← HTML 版桌面样式
+├── src/style-mobile.css ← HTML 版移动样式
+├── src/app.cjs         ← HTML 版核心逻辑（统计 / 预测 / 胆拖随机，两版共用）
 ├── history.json        ← 百期开奖数据快照
-├── build.mjs           ← 构建脚本（node build.mjs）
+├── build.mjs           ← 构建脚本（node build.mjs，一次构建桌面+移动两版）
 ├── update-data.mjs     ← 本机一键更新数据脚本（node update-data.mjs）
 └── test.cjs            ← 算法自测（node test.cjs，含浏览器版/插件版一致性）
 ```

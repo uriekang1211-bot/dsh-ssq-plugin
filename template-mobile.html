@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>双色球助手 · 移动版</title>
+<style>
+/*__CSS__*/
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="head-row">
+      <h1>🎱 双色球助手</h1>
+      <button id="btnOnline" class="btn ghost">在线更新</button>
+    </div>
+    <p class="head-sub">
+      数据源：cwl.gov.cn ｜ 窗口：最近 <b id="dataCount">–</b> 期（<b id="dataOldest">–</b> ~ <b id="dataLatest">–</b>）
+    </p>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="tab-trend">趋势</button>
+    <button class="tab-btn" data-tab="tab-predict">预测</button>
+    <button class="tab-btn" data-tab="tab-gen">选号</button>
+  </nav>
+
+  <!-- ==================== 趋势追踪 ==================== -->
+  <section id="tab-trend" class="panel active">
+    <div class="card">
+      <div class="ctrl-row">
+        <label>统计窗口
+          <select id="winSelect">
+            <option value="10">最近 10 期</option>
+            <option value="20">最近 20 期</option>
+            <option value="30">最近 30 期</option>
+            <option value="50">最近 50 期</option>
+            <option value="80">最近 80 期</option>
+            <option value="100">最近 100 期</option>
+            <option value="200">最近 200 期</option>
+            <option value="300">最近 300 期</option>
+            <option value="500">最近 500 期</option>
+            <option value="800">最近 800 期</option>
+            <option value="1000" selected>最近 1000 期</option>
+          </select>
+        </label>
+        <label>明细排序
+          <select id="sortSelect">
+            <option value="cnt" selected>出现次数 ↓</option>
+            <option value="gap">当前遗漏 ↓</option>
+            <option value="maxgap">最大遗漏 ↓</option>
+            <option value="freq">出现频率 ↓</option>
+          </select>
+        </label>
+        <label>热力图期数
+          <select id="heatSelect">
+            <option value="10">最近 10 期</option>
+            <option value="20" selected>最近 20 期</option>
+            <option value="30">最近 30 期</option>
+            <option value="50">最近 50 期</option>
+          </select>
+        </label>
+        <span class="legend">
+          <i class="lg hot"></i>热 <i class="lg warm"></i>温 <i class="lg cold"></i>冷
+        </span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>红球（1–33）出现次数分布</h3>
+      <canvas id="redBars" height="200"></canvas>
+      <p class="hint">点击柱子查看该号码走势</p>
+    </div>
+    <div class="card">
+      <h3>蓝球（1–16）出现次数分布</h3>
+      <canvas id="blueBars" height="180"></canvas>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>红球明细（点行看走势）</h3>
+        <span id="redStatInfo" class="hint"></span>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>号码</th><th>次数</th><th>频率</th><th>近10</th><th>遗漏</th>
+            <th>最大</th><th>平均</th><th>状态</th><th>趋势</th>
+          </tr></thead>
+          <tbody id="redTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>蓝球明细</h3>
+        <span id="blueStatInfo" class="hint"></span>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>号码</th><th>次数</th><th>频率</th><th>近10</th><th>遗漏</th>
+            <th>最大</th><th>平均</th><th>状态</th><th>趋势</th>
+          </tr></thead>
+          <tbody id="blueTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>红球出现热力图</h3>
+      <div id="redHeat" class="heat"></div>
+    </div>
+    <div class="card">
+      <h3>蓝球出现热力图</h3>
+      <div id="blueHeat" class="heat"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3 id="selTitle">单号走势（滚动 10 期出现频率）</h3>
+        <span id="selDetail" class="hint"></span>
+      </div>
+      <canvas id="lineChart" height="200"></canvas>
+    </div>
+  </section>
+
+  <!-- ==================== 智能预测 ==================== -->
+  <section id="tab-predict" class="panel">
+    <div class="card warn-card">
+      ⚠️ <b>理性提示：</b>开奖为独立随机事件，预测仅作<b>娱乐性估算</b>，请理性购彩。
+    </div>
+    <div class="card">
+      <h3>预测分析</h3>
+      <div class="ctrl-row" id="modeGroup">
+        <label class="radio"><input type="radio" name="analyzeMode" value="predict" checked> ① 单模型</label>
+        <label class="radio"><input type="radio" name="analyzeMode" value="ensemble"> ② 集成投票</label>
+        <label class="radio"><input type="radio" name="analyzeMode" value="structure"> ③ 结构预测</label>
+      </div>
+      <div id="presetGroup" class="ctrl-row">
+        <label class="radio"><input type="radio" name="preset" value="balanced" checked> 均衡混合</label>
+        <label class="radio"><input type="radio" name="preset" value="cold"> 冷号回补</label>
+        <label class="radio"><input type="radio" name="preset" value="hot"> 热号延续</label>
+        <label class="radio"><input type="radio" name="preset" value="ewma"> EWMA 加权</label>
+        <label class="radio"><input type="radio" name="preset" value="miss"> 遗漏回归</label>
+        <label class="radio"><input type="radio" name="preset" value="expect"> 期望回补</label>
+      </div>
+      <div class="ctrl-row">
+        <label>预测数据范围
+          <select id="predWinSelect">
+            <option value="50">最近 50 期</option>
+            <option value="100">最近 100 期</option>
+            <option value="200">最近 200 期</option>
+            <option value="300">最近 300 期</option>
+            <option value="500">最近 500 期</option>
+            <option value="800">最近 800 期</option>
+            <option value="1000" selected>最近 1000 期</option>
+          </select>
+        </label>
+        <label id="ewmaHalfWrap" class="hidden">EWMA 半衰期
+          <select id="ewmaHalfSelect">
+            <option value="20" selected>20 期</option>
+            <option value="50">50 期</option>
+            <option value="100">100 期</option>
+          </select>
+        </label>
+      </div>
+      <div class="btn-row">
+        <button id="btnPredict" class="btn primary">开始分析</button>
+        <button id="btnPredSim" class="btn" disabled>模拟 10 注</button>
+      </div>
+      <p class="hint">💡 选分析模式 →（模式①）选模型 → 选数据范围 → 开始分析。三种模式结果互不叠加。</p>
+    </div>
+
+    <div id="predResult" class="hidden">
+      <div class="card">
+        <div class="card-head">
+          <h3>📌 预测推荐</h3>
+          <span id="predModelName" class="hint"></span>
+        </div>
+        <div id="predRec" class="chips"></div>
+        <p id="predBlueAlt" class="hint"></p>
+      </div>
+
+      <div class="card">
+        <h3>红球预测概率排名</h3>
+        <div class="tbl-wrap scroll">
+          <table>
+            <thead><tr><th>排名</th><th>号码</th><th>概率</th><th>期望</th><th>信号</th></tr></thead>
+            <tbody id="predRedBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h3>蓝球预测概率排名</h3>
+        <div class="tbl-wrap scroll">
+          <table>
+            <thead><tr><th>排名</th><th>号码</th><th>概率</th><th>信号</th></tr></thead>
+            <tbody id="predBlueBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>预测模拟号码（按概率加权）</h3>
+        <div id="predSim" class="chips-col"></div>
+      </div>
+    </div>
+
+    <div id="structResult" class="hidden">
+      <div class="card">
+        <div class="card-head">
+          <h3>📊 组合结构预测</h3>
+          <span id="structModelName" class="hint"></span>
+        </div>
+        <p class="hint">统计所选期内红球的奇偶比 / 大小比 / 三区间 / 和值分布，按最可能结构生成选号。</p>
+        <div class="card sub">
+          <h3>奇偶比频率</h3>
+          <div id="structOddEven" class="struct-list"></div>
+        </div>
+        <div class="card sub">
+          <h3>大小比频率</h3>
+          <div id="structSize" class="struct-list"></div>
+        </div>
+        <div class="card sub">
+          <h3>三区间频率</h3>
+          <div id="structZone" class="struct-list"></div>
+        </div>
+        <div class="card sub">
+          <h3>和值区间频率</h3>
+          <div id="structSum" class="struct-list"></div>
+        </div>
+        <div class="card sub">
+          <h3>按最可能结构筛选 5 注</h3>
+          <div id="structCombos" class="chips-col"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 选号生成 ==================== -->
+  <section id="tab-gen" class="panel">
+    <div class="card">
+      <h3>🎲 纯随机选号</h3>
+      <p class="hint">随机生成 6 红（1–33）+ 1 蓝（1–16）。</p>
+      <div class="ctrl-row">
+        <label>注数
+          <input id="randCount" type="number" min="1" max="50" value="5">
+        </label>
+        <button id="btnRand" class="btn primary">随机生成</button>
+      </div>
+      <div id="randResult" class="chips-col"></div>
+    </div>
+
+    <div class="card">
+      <h3>🎯 胆拖选号</h3>
+      <p class="hint">胆码 1–5 个（每注必中）；拖码 ≥ 6−胆码数；每注 = 胆码 + 拖码补足 6 红 + 1 蓝。</p>
+      <div class="ctrl-row" id="dtModeRow">
+        <label class="radio"><input type="radio" name="dtmode" value="dan" checked> 选胆码</label>
+        <label class="radio"><input type="radio" name="dtmode" value="tuo"> 选拖码</label>
+        <label class="radio"><input type="radio" name="dtmode" value="blue"> 选蓝球</label>
+        <button id="btnDtClear" class="btn ghost">清空</button>
+      </div>
+      <p class="hint">红球：</p>
+      <div id="danGrid" class="num-grid"></div>
+      <p class="hint">蓝球：</p>
+      <div id="blueGrid" class="num-grid blue-grid"></div>
+      <div id="dtSummary" class="summary"></div>
+      <div class="ctrl-row">
+        <button id="btnDtAll" class="btn primary">生成全部</button>
+        <label>随机抽
+          <input id="dtSample" type="number" min="1" max="100" value="5"> 注
+        </label>
+        <button id="btnDtSample" class="btn">抽取</button>
+        <button id="btnDtDownload" class="btn ghost hidden">导出 .txt</button>
+      </div>
+      <div id="dtResult" class="chips-col"></div>
+    </div>
+  </section>
+
+  <footer>
+    <p class="disclaimer">
+      ⚠️ 本工具仅供学习与娱乐参考，不构成投注建议。开奖为独立随机事件，请理性购彩。<br>
+      <span class="hint">数据来源：cwl.gov.cn 及其 GitHub 镜像；点「在线更新」拉取最新数据。</span>
+    </p>
+  </footer>
+</div>
+
+<script>
+"use strict";
+const EMBEDDED_DATA = /*__DATA_JSON__*/;
+/*__APP_JS__*/
+</script>
+</body>
+</html>

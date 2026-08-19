@@ -1058,11 +1058,11 @@ async function fetchOnline() {
 
   // ④ 全部失败
   btn.disabled = false; btn.textContent = "在线更新";
+  const importTip = $("btnImport") ? "\n3. 点「导出数据」拿到 JSON → 用官方接口最新数据替换 → 再点「导入数据」粘贴。" : "";
   alert("❌ 全部数据源尝试失败：\n\n" + failures.join("\n") +
     "\n\n解决办法（任选其一）：\n" +
     "1. 检查网络后重新点击「在线更新」；\n" +
-    "2. 本机已装 Node.js 的话，运行插件目录里的「node update-data.mjs」一键更新（无浏览器限制）；\n" +
-    "3. 点「导出数据」拿到 JSON → 用官方接口最新数据替换 → 再点「导入数据」粘贴。");
+    "2. 本机已装 Node.js 的话，运行插件目录里的「node update-data.mjs」一键更新（无浏览器限制）；" + importTip);
 }
 
 /* ---------------- 初始化 ---------------- */
@@ -1112,15 +1112,15 @@ function init() {
   $("btnDtSample").onclick = () => doGenDanTuo(false);
   $("btnDtDownload").onclick = downloadTxt;
 
-  // 数据
-  $("btnExport").onclick = exportJSON;
-  $("btnImport").onclick = () => $("importPanel").classList.toggle("hidden");
-  $("btnImportClose").onclick = () => $("importPanel").classList.add("hidden");
-  $("btnImportGo").onclick = () => importJSON($("importText").value);
-  $("btnOnline").onclick = fetchOnline;
+  // 数据（移动版模板无导入导出按钮，判空保护）
+  if ($("btnExport")) $("btnExport").onclick = exportJSON;
+  if ($("btnImport")) $("btnImport").onclick = () => $("importPanel").classList.toggle("hidden");
+  if ($("btnImportClose")) $("btnImportClose").onclick = () => $("importPanel").classList.add("hidden");
+  if ($("btnImportGo")) $("btnImportGo").onclick = () => importJSON($("importText").value);
+  if ($("btnOnline")) $("btnOnline").onclick = fetchOnline;
 
   renderTrend();
-  if (!DRAW_DATA.length) alert("未内置历史数据，请点「导入数据」粘贴双色球历史 JSON。");
+  if (!DRAW_DATA.length) alert("未内置历史数据，请通过「在线更新」拉取最新数据。");
 }
 
 if (typeof document !== "undefined" && typeof window !== "undefined") {
