@@ -158,6 +158,12 @@
           <span class="hint">侧重当前遗漏超期未出的号码</span></label>
         <label class="radio"><input type="radio" name="preset" value="hot"> 热号延续
           <span class="hint">侧重近期高频出现的号码</span></label>
+        <label class="radio"><input type="radio" name="preset" value="ewma"> EWMA 近期加权
+          <span class="hint">半衰期 20 期指数加权，突出近期走势</span></label>
+        <label class="radio"><input type="radio" name="preset" value="miss"> 遗漏均值回归
+          <span class="hint">超期未出即回补，纯遗漏视角</span></label>
+        <label class="radio"><input type="radio" name="preset" value="expect"> 期望偏差回补
+          <span class="hint">出现次数低于期望的号码靠前（大数回归）</span></label>
       </div>
       <div class="ctrl-row">
         <label>预测数据范围
@@ -172,6 +178,8 @@
       </div>
       <div class="btn-row">
         <button id="btnPredict" class="btn primary">开始预测下一期</button>
+        <button id="btnEnsemble" class="btn">⚖ 集成投票</button>
+        <button id="btnStructure" class="btn">📊 组合结构预测</button>
         <button id="btnPredSim" class="btn" disabled>按预测概率模拟 10 注</button>
       </div>
     </div>
@@ -210,6 +218,40 @@
       <div class="card">
         <h3>预测模拟号码（按概率加权随机）</h3>
         <div id="predSim" class="chips-col"></div>
+      </div>
+    </div>
+
+    <div id="structResult" class="hidden">
+      <div class="card">
+        <div class="card-head">
+          <h3>📊 组合结构预测</h3>
+          <span id="structModelName" class="hint"></span>
+        </div>
+        <p class="hint">基于所选期数范围内的历史开奖，统计下一期红球最可能的<strong>结构特征</strong>（奇偶比 / 大小比 / 三区间 / 和值区间），并给出按最可能结构筛选的选号组合。</p>
+        <div class="grid2">
+          <div class="card">
+            <h3>奇偶比历史频率</h3>
+            <div id="structOddEven" class="struct-list"></div>
+          </div>
+          <div class="card">
+            <h3>大小比历史频率</h3>
+            <div id="structSize" class="struct-list"></div>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="card">
+            <h3>三区间分布历史频率</h3>
+            <div id="structZone" class="struct-list"></div>
+          </div>
+          <div class="card">
+            <h3>和值区间历史频率</h3>
+            <div id="structSum" class="struct-list"></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>按最可能结构筛选的 5 注</h3>
+          <div id="structCombos" class="chips-col"></div>
+        </div>
       </div>
     </div>
   </section>

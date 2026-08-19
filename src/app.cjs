@@ -106,6 +106,14 @@ function computeStats(draws, windowSize) {
       return s;
     });
     const recZ = zscore(rec);
+    // EWMA 信号：半衰期 20 期的指数加权出现频率（z 标准化），供「EWMA 近期加权」模型使用
+    const EWMA_HALF = 20;
+    const ewma = hit.map(row => {
+      let s = 0;
+      for (let di = 0; di < W; di++) s += row[di] * Math.pow(0.5, (W - 1 - di) / EWMA_HALF);
+      return s;
+    });
+    const ewmaZ = zscore(ewma);
     const gap = hit.map(row => { // 当前遗漏：从最后一期往前连续未出期数
       let g = 0;
       for (let di = W - 1; di >= 0 && row[di] === 0; di--) g++;
@@ -126,6 +134,7 @@ function computeStats(draws, windowSize) {
       it.freq = it.cnt / (isRed ? 6 * W : W);
       it.zFreq = z;
       it.rec = recZ[i];
+      it.ewma = ewmaZ[i];
       it.gap = gap[i];
       it.maxGap = maxGap[i];
       it.avgGap = it.cnt > 0 ? W / it.cnt : W + 1;
@@ -152,9 +161,12 @@ function computeStats(draws, windowSize) {
 
 /* ---------------- 预测算法 ---------------- */
 const PRESETS = {
-  balanced: { label: "均衡混合", w: { freq: 0.40, rec: 0.30, gap: 0.30 } },
-  cold:     { label: "冷号回补", w: { freq: 0.15, rec: 0.10, gap: 0.75 } },
-  hot:      { label: "热号延续", w: { freq: 0.60, rec: 0.35, gap: 0.05 } }
+  balanced: { label: "均衡混合", w: { freq: 0.40, rec: 0.30, gap: 0.30, ewma: 0 } },
+  cold:     { label: "冷号回补", w: { freq: 0.15, rec: 0.10, gap: 0.75, ewma: 0 } },
+  hot:      { label: "热号延续", w: { freq: 0.60, rec: 0.35, gap: 0.05, ewma: 0 } },
+  ewma:     { label: "EWMA 近期加权", w: { freq: 0, rec: 0, gap: 0, ewma: 1 } },
+  miss:     { label: "遗漏均值回归", w: { freq: 0, rec: 0, gap: 1, ewma: 0 } },
+  expect:   { label: "期望偏差回补", w: { freq: -1, rec: 0, gap: 0, ewma: 0 } }
 };
 
 function softmax(arr) {
@@ -167,17 +179,17 @@ function softmax(arr) {
 function predict(stats, presetKey) {
   const p = PRESETS[presetKey] || PRESETS.balanced;
   const score = (item, get) => item.map(it =>
-    p.w.freq * it.zFreq + p.w.rec * it.rec + p.w.gap * it.ratioZ
+    p.w.freq * it.zFreq + p.w.rec * it.rec + p.w.gap * it.ratioZ + (p.w.ewma || 0) * it.ewma
   );
   const redP = softmax(score(stats.red));
   const blueP = softmax(score(stats.blue));
   const redOut = stats.red.map((r, i) => ({
     n: r.n, p: redP[i], exp: 6 * redP[i],
-    zFreq: r.zFreq, zRec: r.rec, zGap: r.ratioZ
+    zFreq: r.zFreq, zRec: r.rec, zGap: r.ratioZ, zEwma: r.ewma
   })).sort((a, b) => b.p - a.p);
   const blueOut = stats.blue.map((b, i) => ({
     n: b.n, p: blueP[i],
-    zFreq: b.zFreq, zRec: b.rec, zGap: b.ratioZ
+    zFreq: b.zFreq, zRec: b.rec, zGap: b.ratioZ, zEwma: b.ewma
   })).sort((a, b) => b.p - a.p);
   return {
     model: p.label,
@@ -189,6 +201,98 @@ function predict(stats, presetKey) {
       blueAlt: blueOut.slice(0, 3).map(x => x.n)
     }
   };
+}
+
+/* 集成投票：跑全部预设，各自取红球 Top6 与蓝球 Top1 投票，票数高者胜出（同票按平均概率排序） */
+function ensemble(stats, presetKeys) {
+  const keys = presetKeys || Object.keys(PRESETS);
+  const votes = {};
+  const avgP = {};
+  for (const key of keys) {
+    const p = predict(stats, key);
+    for (const r of p.red.slice(0, 6)) {
+      votes[r.n] = (votes[r.n] || 0) + 1;
+      avgP[r.n] = (avgP[r.n] || 0) + r.p;
+    }
+    const b = p.rec.blue;
+    votes["b" + b] = (votes["b" + b] || 0) + 1;
+  }
+  const redNums = Object.keys(votes).filter(k => !k.startsWith("b")).map(Number)
+    .sort((a, b) => votes[b] - votes[a] || (avgP[b] / votes[b]) - (avgP[a] / votes[a]));
+  const blueNums = Object.keys(votes).filter(k => k.startsWith("b")).map(k => Number(k.slice(1)))
+    .sort((a, b) => votes["b" + b] - votes["b" + a]);
+  const red = redNums.map(n => ({ n, votes: votes[n], p: +(avgP[n] || 0) }));
+  const blue = blueNums.map(n => ({ n, votes: votes["b" + n], p: 1 }));
+  return {
+    model: "集成投票",
+    presetKeys: keys,
+    red,
+    blue,
+    rec: {
+      red: redNums.slice(0, 6).sort((a, b) => a - b),
+      blue: blueNums[0],
+      blueAlt: blueNums.slice(0, 3)
+    }
+  };
+}
+
+/* 组合结构统计：窗口内每期红球的奇偶比 / 大小比 / 三区间分布 / 和值区间的历史频率 */
+function structureStats(draws, windowSize) {
+  const W = Math.min(windowSize, draws.length);
+  const win = draws.slice(-W);
+  const oddEven = {}, size = {}, zone = {}, sumBins = {};
+  const SUM_BINS = [["≤60", 60], ["61-80", 80], ["81-100", 100], ["101-120", 120], ["121-140", 140], [">140", Infinity]];
+  for (const d of win) {
+    const red = d.red;
+    const oe = red.filter(n => n % 2 === 1).length + ":" + red.filter(n => n % 2 === 0).length;
+    const sz = red.filter(n => n <= 16).length + ":" + red.filter(n => n > 16).length;
+    const z = [0, 0, 0];
+    for (const n of red) z[n <= 11 ? 0 : n <= 22 ? 1 : 2]++;
+    const s = red.reduce((a, n) => a + n, 0);
+    oddEven[oe] = (oddEven[oe] || 0) + 1;
+    size[sz] = (size[sz] || 0) + 1;
+    zone[z.join(":")] = (zone[z.join(":")] || 0) + 1;
+    const sb = SUM_BINS.find(([, max]) => s <= max)[0];
+    sumBins[sb] = (sumBins[sb] || 0) + 1;
+  }
+  const top = obj => Object.entries(obj).sort((a, b) => b[1] - a[1]).map(([key, cnt]) => ({ key, cnt, freq: +(cnt / W).toFixed(4) }));
+  return {
+    windowSize: W,
+    oddEven: top(oddEven),
+    size: top(size),
+    zone: top(zone),
+    sum: top(sumBins),
+    latest: win[W - 1]
+  };
+}
+
+/* 按给定结构约束（奇偶比/大小比/三区间）随机生成 n 注选号（拒绝采样） */
+function genStructureCombos(structure, n) {
+  const oddEven = structure.oddEven.split(":").map(Number);   // [奇, 偶]
+  const size = structure.size.split(":").map(Number);         // [小, 大]
+  const zone = structure.zone.split(":").map(Number);         // [1-11, 12-22, 23-33]
+  const out = [];
+  let guard = 0;
+  while (out.length < n && guard < n * 5000 + 2000) {
+    guard++;
+    const pool = Array.from({ length: 33 }, (_, i) => i + 1);
+    const red = [];
+    const zones = [[1, 11], [12, 22], [23, 33]];
+    for (let zi = 0; zi < 3; zi++) {
+      const [lo, hi] = zones[zi];
+      const cand = pool.filter(v => v >= lo && v <= hi);
+      for (let k = 0; k < zone[zi]; k++) {
+        const idx = Math.floor(Math.random() * cand.length);
+        red.push(cand.splice(idx, 1)[0]);
+      }
+    }
+    const odd = red.filter(v => v % 2 === 1).length;
+    const small = red.filter(v => v <= 16).length;
+    if (odd !== oddEven[0] || small !== size[0]) continue;
+    red.sort((a, b) => a - b);
+    out.push({ red, blue: 1 + Math.floor(Math.random() * 16) });
+  }
+  return out;
 }
 
 function simulateWeighted(pool, k, weights) {
@@ -547,6 +651,93 @@ function runPredict() {
   $("btnPredSim").disabled = false;
 }
 
+/* 集成投票：全部模型各自 Top6/Top1 投票，票数高者胜出（同票按平均概率） */
+function runEnsemble() {
+  const w = Math.min(1000, Math.max(10, parseInt($("predWinSelect").value, 10) || 1000));
+  const stats = computeStats(DRAW_DATA, w);
+  const en = ensemble(stats);
+  const first = stats.draws[0], last = stats.draws[stats.draws.length - 1];
+  $("predModelName").textContent = `模型：${en.model}（${en.presetKeys.length} 个模型投票，基于最近 ${stats.windowSize} 期，${first.issue} ~ ${last.issue}）`;
+  const rec = en.rec;
+  const recBox = $("predRec");
+  recBox.innerHTML = "";
+  rec.red.forEach(n => recBox.appendChild(el("span", { class: "chip", text: String(n).padStart(2, "0") })));
+  recBox.appendChild(el("span", { class: "chip blue", text: String(rec.blue).padStart(2, "0") }));
+  $("predBlueAlt").textContent = `蓝球备选（票数 Top3）：${rec.blueAlt.map(b => String(b).padStart(2, "0")).join("、")}`;
+
+  const redBody = $("predRedBody"), blueBody = $("predBlueBody");
+  redBody.innerHTML = ""; blueBody.innerHTML = "";
+  en.red.forEach((x, i) => {
+    redBody.appendChild(el("tr", {}, [
+      el("td", { text: String(i + 1) }),
+      el("td", { class: "num", text: String(x.n).padStart(2, "0") }),
+      el("td", { text: `${x.votes}/${en.presetKeys.length} 票` }),
+      el("td", { text: "—" }),
+      el("td", { html: `<span class="hint">${x.votes} 个模型推荐入 Top6</span>` })
+    ]));
+  });
+  en.blue.forEach((x, i) => {
+    blueBody.appendChild(el("tr", {}, [
+      el("td", { text: String(i + 1) }),
+      el("td", { class: "blue", text: String(x.n).padStart(2, "0") }),
+      el("td", { text: `${x.votes}/${en.presetKeys.length} 票` }),
+      el("td", { html: `<span class="hint">${x.votes} 个模型推荐为蓝球</span>` })
+    ]));
+  });
+  // 供「按预测概率模拟」复用：未获票号码权重为 0（几乎不会被抽中）
+  LAST_PRED = {
+    model: en.model,
+    rec,
+    red: Array.from({ length: 33 }, (_, i) => i + 1).map(n => ({ n, p: (en.red.find(r => r.n === n) || {}).p || 0 })),
+    blue: Array.from({ length: 16 }, (_, i) => i + 1).map(n => ({ n, p: (en.blue.find(b => b.n === n) || {}).p || 0 }))
+  };
+  $("predResult").classList.remove("hidden");
+  $("btnPredSim").disabled = false;
+}
+
+/* 组合结构预测：统计奇偶/大小/三区间/和值分布，并按最可能结构生成选号 */
+function runStructure() {
+  const w = Math.min(1000, Math.max(10, parseInt($("predWinSelect").value, 10) || 1000));
+  const ss = structureStats(DRAW_DATA, w);
+  const first = ss.latest ? DRAW_DATA.slice(-ss.windowSize)[0].issue : "—";
+  const last = ss.latest.issue;
+  $("structModelName").textContent = `基于最近 ${ss.windowSize} 期（${first} ~ ${last}）`;
+  renderStructList("structOddEven", ss.oddEven, "奇偶比");
+  renderStructList("structSize", ss.size, "大小比");
+  renderStructList("structZone", ss.zone, "三区间");
+  renderStructList("structSum", ss.sum, "和值区间");
+  // 按最可能结构（Top1）生成 5 注
+  const top = {
+    oddEven: ss.oddEven[0].key,
+    size: ss.size[0].key,
+    zone: ss.zone[0].key
+  };
+  const combos = genStructureCombos(top, 5);
+  const box = $("structCombos");
+  box.innerHTML = "";
+  box.appendChild(el("p", { class: "hint", text: `按最可能结构（奇偶 ${top.oddEven} · 大小 ${top.size} · 区间 ${top.zone}）筛选` }));
+  combos.forEach((c, i) => {
+    const row = el("div", { class: "combo" }, [el("b", { text: `第 ${i + 1} 注` })]);
+    c.red.forEach(n => row.appendChild(el("span", { class: "chip", text: String(n).padStart(2, "0") })));
+    row.appendChild(el("span", { class: "chip blue", text: String(c.blue).padStart(2, "0") }));
+    box.appendChild(row);
+  });
+  $("structResult").classList.remove("hidden");
+}
+
+function renderStructList(id, rows, label) {
+  const box = $(id);
+  box.innerHTML = "";
+  rows.slice(0, 5).forEach((r, i) => {
+    const row = el("div", { class: "struct-row" + (i === 0 ? " top" : "") }, [
+      el("span", { class: "struct-key", text: `${label} ${r.key}` }),
+      el("span", { class: "struct-bar", style: `display:inline-block;height:10px;width:${Math.max(6, Math.round(r.freq * 100 * 2.5))}px;background:${i === 0 ? "#d63b3b" : "#c9d2de"};border-radius:5px;vertical-align:middle` }),
+      el("span", { class: "struct-freq", text: (r.freq * 100).toFixed(1) + "%（" + r.cnt + " 期）" })
+    ]);
+    box.appendChild(row);
+  });
+}
+
 function sigHtml(x) {
   const f = (v) => (v >= 0 ? "+" : "") + v.toFixed(2);
   return `<span class="${x.zFreq >= 0 ? "up" : "down"}">频${f(x.zFreq)}</span> ` +
@@ -871,6 +1062,8 @@ function init() {
 
   // 预测
   $("btnPredict").onclick = runPredict;
+  $("btnEnsemble").onclick = runEnsemble;
+  $("btnStructure").onclick = runStructure;
   $("btnPredSim").onclick = runPredSim;
 
   // 随机
@@ -908,5 +1101,5 @@ if (typeof document !== "undefined" && typeof window !== "undefined") {
 
 /* Node 测试导出 */
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { normalize, mergeDraws, computeStats, predict, genDanTuo, genRandom, cnk, combos, simulateWeighted, softmax, adaptGitHub, DATA_SOURCES };
+  module.exports = { normalize, mergeDraws, computeStats, predict, ensemble, structureStats, genStructureCombos, PRESETS, genDanTuo, genRandom, cnk, combos, simulateWeighted, softmax, adaptGitHub, DATA_SOURCES };
 }

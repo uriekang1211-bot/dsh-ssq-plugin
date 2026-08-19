@@ -47,6 +47,38 @@ async function main() {
   }
   console.log(`      均衡混合推荐: 红 [${lib.predict(s, "balanced").rec.red.join(",")}] 蓝 ${lib.predict(s, "balanced").rec.blue}`);
 
+  // 3b. 新模型预设：EWMA / 遗漏均值回归 / 期望偏差回补
+  for (const key of ["ewma", "miss", "expect"]) {
+    const p = lib.predict(s, key);
+    check(`预测[${key}] 红球概率和=1`, Math.abs(p.red.reduce((a, x) => a + x.p, 0) - 1) < 1e-9);
+    check(`预测[${key}] 推荐=6红+1蓝`, p.rec.red.length === 6 && p.rec.red.every(n => n >= 1 && n <= 33) && p.rec.blue >= 1 && p.rec.blue <= 16);
+  }
+  const pe = lib.predict(s, "ewma");
+  check("EWMA 模型输出 zEwma 信号", pe.red.every(x => typeof x.zEwma === "number") && pe.red.some(x => x.zEwma !== 0));
+  const pm = lib.predict(s, "miss");
+  const pmCold = lib.predict(s, "cold");
+  check("遗漏均值回归与冷号回补 Top6 重合度高", pm.rec.red.filter(n => pmCold.rec.red.includes(n)).length >= 3);
+
+  // 3c. 集成投票
+  const en = lib.ensemble(s);
+  check("集成投票含 6 个模型", en.presetKeys.length === 6 && en.model === "集成投票");
+  check("集成投票推荐=6红+1蓝", en.rec.red.length === 6 && en.rec.red.every(n => n >= 1 && n <= 33) && en.rec.blue >= 1 && en.rec.blue <= 16);
+  check("集成投票得票数合法", en.red.every(x => x.votes >= 1 && x.votes <= 6) && en.blue.every(x => x.votes >= 1 && x.votes <= 6));
+  check("集成投票按票数降序", en.red.every((x, i) => i === 0 || en.red[i - 1].votes >= x.votes));
+
+  // 3d. 组合结构统计
+  const ss = lib.structureStats(draws, 1000);
+  const sumFreq = (arr) => Math.abs(arr.reduce((a, x) => a + x.freq, 0) - 1) < 1e-6;
+  check("结构统计 4 类频率和=1", sumFreq(ss.oddEven) && sumFreq(ss.size) && sumFreq(ss.zone) && sumFreq(ss.sum));
+  check("结构统计 Top1 存在且计数合理", ss.oddEven.length > 0 && ss.oddEven[0].cnt >= 1 && /^\d+:\d+$/.test(ss.oddEven[0].key));
+  const combos = lib.genStructureCombos({ oddEven: ss.oddEven[0].key, size: ss.size[0].key, zone: ss.zone[0].key }, 5);
+  check("结构选号 5 注且符合约束", combos.length === 5 && combos.every(c => {
+    const oe = ss.oddEven[0].key.split(":").map(Number);
+    const sz = ss.size[0].key.split(":").map(Number);
+    return c.red.length === 6 && c.red.filter(v => v % 2 === 1).length === oe[0] &&
+      c.red.filter(v => v <= 16).length === sz[0] && c.blue >= 1 && c.blue <= 16;
+  }));
+
   // 4. 组合数学
   check("C(5,2)=10", lib.cnk(5, 2) === 10);
   check("C(33,6)=1107568", lib.cnk(33, 6) === 1107568, `实际 ${lib.cnk(33, 6)}`);
@@ -96,6 +128,23 @@ async function main() {
     lib.predict(s, "balanced").rec.blue === pb.rec.blue);
   check("ESM 版胆拖全部组合与浏览器版一致",
     JSON.stringify(coreESM.genDanTuo([1, 2], [3, 4, 5, 6, 7], [1, 2], { all: true }).list) === JSON.stringify(r1.list));
+  // 新模型两版一致性
+  for (const key of ["ewma", "miss", "expect"]) {
+    check(`ESM 版预测[${key}]推荐与浏览器版一致`,
+      coreESM.predict(sb, key).rec.red.join(",") === lib.predict(s, key).rec.red.join(",") &&
+      coreESM.predict(sb, key).rec.blue === lib.predict(s, key).rec.blue);
+  }
+  const enB = lib.ensemble(s), enE = coreESM.ensemble(sb);
+  check("ESM 版集成投票与浏览器版一致",
+    enB.rec.red.join(",") === enE.rec.red.join(",") && enB.rec.blue === enE.rec.blue &&
+    JSON.stringify(enB.red.map(x => [x.n, x.votes])) === JSON.stringify(enE.red.map(x => [x.n, x.votes])));
+  const ssB = lib.structureStats(draws, 1000), ssE = coreESM.structureStats(drawsB, 1000);
+  check("ESM 版结构统计与浏览器版一致",
+    JSON.stringify(ssB.oddEven) === JSON.stringify(ssE.oddEven) &&
+    JSON.stringify(ssB.size) === JSON.stringify(ssE.size) &&
+    JSON.stringify(ssB.zone) === JSON.stringify(ssE.zone) &&
+    JSON.stringify(ssB.sum) === JSON.stringify(ssE.sum));
+  check("ESM 版 PRESETS 与浏览器版一致", Object.keys(coreESM.PRESETS).join(",") === Object.keys(lib.PRESETS).join(","));
 
   // 8b. 增量合并 mergeDraws（浏览器版与插件版一致 + 行为校验）
   const mk = (issue, red = [1, 2, 3, 4, 5, 6], blue = 1) => ({ issue, date: "2026-08-01", red, blue });
@@ -127,8 +176,9 @@ async function main() {
   const stubCtx = { tools: { register: t => { registered = t; } } };
   plugin.apply(stubCtx);
   check("工具已注册且名为 ssq", registered != null && registered.name === "ssq");
-  check("工具参数含 action 枚举", registered.parameters.properties.action.enum.join(",") === "trend,predict,generate" &&
+  check("工具参数含 action 枚举", registered.parameters.properties.action.enum.join(",") === "trend,predict,ensemble,structure,generate" &&
     (registered.parameters.required || []).includes("action"));
+  check("工具参数含 6 个模型预设", registered.parameters.properties.preset.enum.join(",") === "balanced,cold,hot,ewma,miss,expect");
   check("工具输出 schema 完整", registered.output.schema.required.join(",") === "ok,message,detail");
 
   const bundledRaw = require("./history.json");
@@ -147,6 +197,16 @@ async function main() {
     const t2c = await registered.execute({ action: "predict", preset: "balanced", window: 100 });
     check("tool predict 可选 100 期数据范围", /基于最近 100 期/.test(t2c.message) && JSON.parse(t2c.detail).window === 100);
     check("tool predict 输出含预测数据范围字段", typeof t2d.first === "string" && typeof t2d.last === "string");
+    const t2e = await registered.execute({ action: "predict", preset: "ewma" });
+    check("tool predict 支持 ewma 模型", t2e.ok === true && /EWMA 近期加权/.test(t2e.message));
+    const t2f = await registered.execute({ action: "predict", preset: "miss" });
+    check("tool predict 支持 miss 模型", t2f.ok === true && /遗漏均值回归/.test(t2f.message));
+    const t2g = await registered.execute({ action: "predict", preset: "expect" });
+    check("tool predict 支持 expect 模型", t2g.ok === true && /期望偏差回补/.test(t2g.message));
+    const t2h = await registered.execute({ action: "ensemble" });
+    check("tool ensemble 正常返回", t2h.ok === true && /集成投票/.test(t2h.message) && JSON.parse(t2h.detail).red[0].votes >= 1);
+    const t2i = await registered.execute({ action: "structure", window: 500 });
+    check("tool structure 正常返回", t2i.ok === true && /组合结构预测/.test(t2i.message) && JSON.parse(t2i.detail).combos.length === 5);
     const t3 = await registered.execute({ action: "generate", mode: "random", count: 3 });
     const t3d = JSON.parse(t3.detail);
     check("tool random 生成 3 注", t3.ok === true && t3d.combos.length === 3);
