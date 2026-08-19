@@ -1,0 +1,16 @@
+{
+  "name": "双色球助手",
+  "short_name": "双色球",
+  "description": "双色球趋势追踪 / 智能预测 / 胆拖随机选号助手（千期数据，离线可用）",
+  "start_url": "./index-mobile.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f2f4f8",
+  "theme_color": "#d63b3b",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

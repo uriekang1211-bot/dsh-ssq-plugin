@@ -31,6 +31,8 @@ dsh plugin --profile web remove dsh-ssq-plugin
 双击打开 **`dist/index.html`** 即可（桌面，Chrome / Edge / Safari 均可）。
 手机访问请打开 **`dist/index-mobile.html`**（移动版，底部导航 + 大触控目标，已去掉导入/导出按钮）。
 
+**手机装成 App（PWA）**：把 `dist/` 下的移动版文件（`index-mobile.html` + `manifest.json` + `sw.js` + `icons/`）部署到任意 https 静态托管（GitHub Pages / Vercel / Netlify 等），手机浏览器打开页面 → 菜单「添加到主屏幕」→ 获得全屏 App 图标体验，支持离线使用。直接发 `index-mobile.html` 单文件到手机也能打开，只是没有 App 图标与离线缓存。
+
 ## 三大功能
 
 ### 1️⃣ 趋势追踪（历史千期）
@@ -96,6 +98,9 @@ dsh-ssq-plugin/
 ├── data/ssq-history.json ← 插件内置数据快照
 ├── dist/index.html     ← HTML 版成品（桌面版，单文件）
 ├── dist/index-mobile.html ← HTML 版成品（移动版，单文件，无导入导出）
+├── dist/manifest.json  ← PWA 清单（移动版添加到主屏幕用）
+├── dist/sw.js          ← PWA Service Worker（离线缓存）
+├── dist/icons/         ← PWA 图标（192/512/maskable/apple-touch）
 ├── template.html       ← HTML 版桌面模板
 ├── template-mobile.html ← HTML 版移动模板
 ├── src/style.css       ← HTML 版桌面样式

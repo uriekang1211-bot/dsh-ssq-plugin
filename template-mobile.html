@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>双色球助手 · 移动版</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#d63b3b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="双色球助手">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <style>
 /*__CSS__*/
 </style>
@@ -293,6 +299,10 @@
 "use strict";
 const EMBEDDED_DATA = /*__DATA_JSON__*/;
 /*__APP_JS__*/
+// PWA 离线缓存（仅 https / localhost 生效；file:// 直接打开时自动跳过，不影响使用）
+if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
 </script>
 </body>
 </html>

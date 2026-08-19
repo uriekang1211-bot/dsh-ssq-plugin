@@ -61,6 +61,13 @@
 - app.cjs 对导入导出元素做空值保护（移动版无这些元素也不会报错）
 - 全部功能保留：趋势 / 预测（6 模型 + 集成 + 结构）/ 选号（随机 + 胆拖）/ 在线更新 / 热力图 / 图表
 
+### 移动版 PWA（添加到主屏幕）
+
+- 新增 PWA 支持：`manifest.json` + Service Worker（`sw.js`，同源缓存优先、离线可用）+ 图标（192/512/maskable/apple-touch-icon，`scripts/gen-icons.py` 生成）
+- 页面头部增加 `theme-color` / `apple-touch-icon` / iOS 全屏 meta；SW 仅在 https/localhost 注册（file:// 直接打开自动跳过，不影响单文件使用）
+- `build.mjs` 构建时自动复制 PWA 资源到 `dist/`
+- 使用方式：把 `dist/` 下的移动版文件部署到 https 静态托管 → 手机浏览器打开 → 菜单「添加到主屏幕」，即获得全屏 App 体验
+
 ## 1.0.0 — 2026-08-18
 
 - 双色球助手插件（趋势追踪 / 智能预测 / 胆拖随机选号），含单文件 HTML 版

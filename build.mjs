@@ -24,6 +24,16 @@ function build(templateFile, cssFile, outFile) {
 build("template.html", "src/style.css", "dist/index.html");
 build("template-mobile.html", "src/style-mobile.css", "dist/index-mobile.html");
 
+// 复制 PWA 资源（manifest / service worker / 图标）到 dist
+mkdirSync(join(root, "dist/icons"), { recursive: true });
+for (const f of ["manifest.json", "sw.js"]) {
+  writeFileSync(join(root, "dist/" + f), readFileSync(join(root, "src/pwa/" + f)));
+}
+for (const f of ["icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png"]) {
+  writeFileSync(join(root, "dist/icons/" + f), readFileSync(join(root, "src/pwa/icons/" + f)));
+}
+console.log("copied PWA assets (manifest.json, sw.js, icons/) → dist");
+
 // 同步插件内置数据快照（DSH 插件包 data/ 目录）
 mkdirSync(join(root, "data"), { recursive: true });
 writeFileSync(join(root, "data/ssq-history.json"), readFileSync(join(root, "history.json")));
