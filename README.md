@@ -113,8 +113,8 @@ dsh-ssq-plugin/
    name: uriekang1211-bot/dsh-ssq-plugin
    category: tools
    description:
-     en: 'SSQ (China Welfare Lottery Double Color Ball) helper for DeepSeek Harness: 1000-draw trend tracking, frequency prediction and dan-tuo/random generation via the ssq tool.'
-     zh: '双色球助手 DSH 插件：千期趋势追踪、智能预测、胆拖/随机选号，对话中直接调用 ssq 工具。'
+     en: 'SSQ (China Welfare Lottery Double Color Ball) helper for DeepSeek Harness: 1000-draw trend tracking, six prediction models with ensemble voting, structure analysis and dan-tuo/random generation via the ssq tool.'
+     zh: '双色球助手 DSH 插件：千期趋势追踪、6 种预测模型与集成投票、组合结构分析、胆拖/随机选号，对话中直接调用 ssq 工具。'
    ```
 2. 在 fork 中运行 `npm ci && node scripts/generate-readme.mjs` 重新生成两个 README，与 YAML 一起提交（README 由脚本生成，勿手改）
 3. 收录后（通常一天内），在 DSH Web 的插件市场即可一键安装
