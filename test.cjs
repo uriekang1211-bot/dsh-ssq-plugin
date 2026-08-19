@@ -75,7 +75,7 @@ async function main() {
   const ghDraws = lib.normalize(ghCwl);
   check("GitHub 镜像适配为 cwl 格式", ghCwl.result.length === 2 && ghCwl.result[0].code === "26094" && ghCwl.result[0].red === "06,13,15,17,24,25" && ghCwl.result[0].blue === 1);
   check("GitHub 数据可正常解析", ghDraws.length === 2 && ghDraws[0].red.length === 6 && ghDraws[0].blue === 9);
-  check("数据源链含 4 个源", lib.DATA_SOURCES.length === 4 &&
+  check("数据源链含 5 个源（官方增量/全量 + 3 镜像）", lib.DATA_SOURCES.length === 5 &&
     lib.DATA_SOURCES.every(s => typeof s.url === "string" && s.url.startsWith("http") && typeof s.adapt === "function"));
 
   // 8. 浏览器版（src/app.js）与插件版（lib/ssq-core.js）核心一致性
@@ -96,6 +96,25 @@ async function main() {
     lib.predict(s, "balanced").rec.blue === pb.rec.blue);
   check("ESM 版胆拖全部组合与浏览器版一致",
     JSON.stringify(coreESM.genDanTuo([1, 2], [3, 4, 5, 6, 7], [1, 2], { all: true }).list) === JSON.stringify(r1.list));
+
+  // 8b. 增量合并 mergeDraws（浏览器版与插件版一致 + 行为校验）
+  const mk = (issue, red = [1, 2, 3, 4, 5, 6], blue = 1) => ({ issue, date: "2026-08-01", red, blue });
+  const base5 = [mk("2026080"), mk("2026081"), mk("2026082"), mk("2026083"), mk("2026084")];
+  const fresh2 = [mk("2026083"), mk("2026084"), mk("2026085"), mk("2026086")]; // 2 期重复 + 2 期新增
+  const m1 = lib.mergeDraws(base5, fresh2);
+  check("merge 去重合并且新增数=2", m1.addedCount === 2 && m1.draws.length === 7 &&
+    m1.draws[0].issue === "2026080" && m1.draws[6].issue === "2026086");
+  check("merge 连续期号无缺口", m1.hasGap === false);
+  const m2 = lib.mergeDraws([mk("2026080"), mk("2026082")], [mk("2026083")]); // 中间缺 2026081
+  check("merge 检测到缺口", m2.hasGap === true);
+  const m3 = lib.mergeDraws([mk("2025345")], [mk("2026001")]); // 跨年衔接
+  check("merge 跨年衔接视为连续", m3.hasGap === false);
+  const m4 = lib.mergeDraws(base5, [], 3);
+  check("merge 截取最近 max 期", m4.draws.length === 3 && m4.draws[2].issue === "2026084" && m4.addedCount === 0);
+  const coreM = coreESM.mergeDraws(base5, fresh2);
+  check("ESM 版 mergeDraws 与浏览器版一致", JSON.stringify(m1) === JSON.stringify(coreM));
+  const esmMerge = coreESM.mergeDraws(drawsB, drawsB.slice(-5));
+  check("千期基线增量合并后仍为 1000 期", esmMerge.draws.length === 1000 && esmMerge.addedCount === 0 && esmMerge.hasGap === false);
   check("插件包元数据完整", require("./package.json").name === "dsh-ssq-plugin" &&
     require("./package.json").dsh?.bundle?.patch === "./cordis.patch.yml" &&
     require("./package.json").main === "lib/index.js");

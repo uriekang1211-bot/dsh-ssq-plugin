@@ -136,7 +136,7 @@ canvas{width:100%;display:block}
     </div>
     <p class="head-sub">
       数据源：中国福利彩票发行管理中心（cwl.gov.cn）｜
-      窗口：最近 <b id="dataCount">–</b> 期（含最新一期 <b id="dataLatest">–</b>）
+      窗口：最近 <b id="dataCount">–</b> 期（<b id="dataOldest">–</b> ~ <b id="dataLatest">–</b>）
     </p>
     <div id="importPanel" class="card hidden">
       <p>将「双色球历史数据 JSON」（形如 <code>{"result":[{"code":"2026094","red":"06,13,15,17,24,25","blue":"01"}, ...]}</code>，最新期在前）粘贴到下面：</p>
@@ -409,6 +409,33 @@ function normalize(raw) {
   }
   out.reverse(); // 接口最新在前 → 转为时间正序
   return out;
+}
+
+/* 增量合并（与 lib/ssq-core.js 的 mergeDraws 保持一致，test.cjs 会校验）：
+ * 在线拉取的最新若干期 fresh 并入本地历史基线 baseline：
+ * 按期号去重、时间正序、截取最近 max 期；返回新增期数 addedCount 与连续性
+ * 检测结果 hasGap（期号中间断开视为缺口，跨年衔接 YYYY001 接 YYYYxxx 视为连续）。 */
+function mergeDraws(baseline, fresh, max = 1000) {
+  const byIssue = new Map();
+  for (const d of [...(baseline || []), ...(fresh || [])]) {
+    if (d && d.issue && !byIssue.has(d.issue)) byIssue.set(d.issue, d);
+  }
+  const all = [...byIssue.values()].sort((a, b) => (a.issue < b.issue ? -1 : a.issue > b.issue ? 1 : 0));
+  const baseSet = new Set((baseline || []).map(d => d.issue));
+  const addedCount = (fresh || []).filter(d => d && d.issue && !baseSet.has(d.issue)).length;
+  const draws = all.slice(-max);
+  let hasGap = false;
+  for (let i = 1; i < draws.length; i++) {
+    const p = draws[i - 1].issue, c = draws[i].issue;
+    if (!/^\d+$/.test(p) || !/^\d+$/.test(c)) continue;
+    const pn = Number(p), cn = Number(c);
+    if (cn === pn + 1) continue;
+    const py = Math.floor(pn / 1000), cy = Math.floor(cn / 1000);
+    if (cy === py + 1 && cn % 1000 === 1) continue; // 跨年衔接
+    hasGap = true;
+    break;
+  }
+  return { draws, addedCount, hasGap };
 }
 
 /* ---------------- 统计核心 ---------------- */
@@ -1031,9 +1058,10 @@ function downloadTxt() {
 
 /* ---------------- 数据更新 ---------------- */
 function updateHeader() {
-  if (!DRAW_DATA.length) { $("dataCount").textContent = "0"; $("dataLatest").textContent = "—"; return; }
-  const last = DRAW_DATA[DRAW_DATA.length - 1];
+  if (!DRAW_DATA.length) { $("dataCount").textContent = "0"; $("dataOldest").textContent = "—"; $("dataLatest").textContent = "—"; return; }
+  const first = DRAW_DATA[0], last = DRAW_DATA[DRAW_DATA.length - 1];
   $("dataCount").textContent = String(DRAW_DATA.length);
+  $("dataOldest").textContent = first.issue;
   $("dataLatest").textContent = `${last.issue} 期（${last.date}）`;
 }
 
@@ -1084,12 +1112,19 @@ function adaptGitHub(json) {
   };
 }
 
-const DATA_SOURCES = [
-  {
-    name: "官方福彩接口（直连）",
-    url: "https://www.cwl.gov.cn/cwl_admin/front/cwlkj/search/kjxx/findDrawNotice?name=ssq&issueCount=1000",
-    adapt: json => json
-  },
+// 增量主源：只拉最新 200 期，与本地基线（内嵌 1000 期快照）合并
+const OFFICIAL_INCR_SRC = {
+  name: "官方福彩接口（增量 200 期）",
+  url: "https://www.cwl.gov.cn/cwl_admin/front/cwlkj/search/kjxx/findDrawNotice?name=ssq&issueCount=200",
+  adapt: json => json
+};
+// 全量回退源：基线过期太久（合并有缺口）时一次拉取 1000 期重建
+const OFFICIAL_FULL_SRC = {
+  name: "官方福彩接口（全量 1000 期）",
+  url: "https://www.cwl.gov.cn/cwl_admin/front/cwlkj/search/kjxx/findDrawNotice?name=ssq&issueCount=1000",
+  adapt: json => json
+};
+const MIRROR_SOURCES = [
   {
     name: "GitHub 镜像① raw",
     url: "https://raw.githubusercontent.com/sinyu1012/Double-Color-Ball-AI/main/fetch_history/lottery_data.json",
@@ -1106,6 +1141,7 @@ const DATA_SOURCES = [
     adapt: adaptGitHub
   }
 ];
+const DATA_SOURCES = [OFFICIAL_INCR_SRC, OFFICIAL_FULL_SRC, ...MIRROR_SOURCES];
 
 async function fetchSource(src, timeoutMs) {
   const ctrl = new AbortController();
@@ -1126,24 +1162,56 @@ async function fetchOnline() {
   const btn = $("btnOnline");
   btn.disabled = true;
   const failures = [];
-  for (let i = 0; i < DATA_SOURCES.length; i++) {
-    const src = DATA_SOURCES[i];
-    btn.textContent = `更新中（${i + 1}/${DATA_SOURCES.length}：${src.name.replace(/^GitHub /, "镜像")}）…`;
-    try {
-      const json = await fetchSource(src, 9000);
-      const draws = normalize(src.adapt(json));
-      if (draws.length < 10) throw new Error("有效数据不足（" + draws.length + " 期）");
-      DRAW_DATA = draws;
-      updateHeader();
-      renderTrend();
-      const last = draws[draws.length - 1];
-      btn.disabled = false; btn.textContent = "在线更新";
-      alert(`✅ 在线更新成功（来源：${src.name}）\n共 ${draws.length} 期，最新 ${last.issue} 期（${last.date}）`);
-      return;
-    } catch (e) {
-      failures.push(`· ${src.name}：${e.message || e}`);
+  const baseline = DRAW_DATA; // 本地保存的基线（内嵌 1000 期快照）
+
+  const tryOne = async (src) => {
+    const json = await fetchSource(src, 9000);
+    const fresh = normalize(src.adapt(json));
+    if (fresh.length < 10) throw new Error("有效数据不足（" + fresh.length + " 期）");
+    return fresh;
+  };
+  const done = (draws, label, extra) => {
+    DRAW_DATA = draws;
+    updateHeader();
+    renderTrend();
+    btn.disabled = false; btn.textContent = "在线更新";
+    const first = draws[0], last = draws[draws.length - 1];
+    alert(`✅ ${label}\n当前 ${draws.length} 期：${first.issue} ~ ${last.issue}，最新 ${last.issue} 期（${last.date}）${extra || ""}`);
+  };
+
+  // ① 官方增量：拉最新 200 期 → 与本地基线合并
+  try {
+    const fresh = await tryOne(OFFICIAL_INCR_SRC);
+    const m = mergeDraws(baseline, fresh);
+    if (m.addedCount > 0) {
+      if (!m.hasGap) return done(m.draws, "增量更新成功（官方接口 + 本地基线）");
+      // 基线过期太久（有缺口）→ 官方全量重建
+      try {
+        const full = await tryOne(OFFICIAL_FULL_SRC);
+        return done(full.slice(-1000), "全量更新成功（官方接口）");
+      } catch (e) { failures.push(`· 官方接口（全量）：${e.message || e}`); }
+      return done(m.draws, "增量更新成功（基线有缺口，已尽力合并）", "\n建议稍后运行 node update-data.mjs 全量刷新");
     }
+    return done(m.draws, "数据已是最新（本地基线）");
+  } catch (e) { failures.push(`· 官方接口（增量）：${e.message || e}`); }
+
+  // ② 官方全量（增量不可达时直接全量）
+  try {
+    const full = await tryOne(OFFICIAL_FULL_SRC);
+    return done(full.slice(-1000), "全量更新成功（官方接口）");
+  } catch (e) { failures.push(`· 官方接口（全量）：${e.message || e}`); }
+
+  // ③ 镜像增量备用（浏览器可直连，带 CORS 头）
+  for (const src of MIRROR_SOURCES) {
+    try {
+      const fresh = await tryOne(src);
+      const m = mergeDraws(baseline, fresh);
+      if (m.addedCount > 0) return done(m.draws, `增量更新成功（${src.name} + 本地基线）`);
+      return done(m.draws, "数据已是最新（镜像确认，本地基线）");
+    } catch (e) { failures.push(`· ${src.name}：${e.message || e}`); }
   }
+
+  // ④ 全部失败
   btn.disabled = false; btn.textContent = "在线更新";
   alert("❌ 全部数据源尝试失败：\n\n" + failures.join("\n") +
     "\n\n解决办法（任选其一）：\n" +
@@ -1213,7 +1281,7 @@ if (typeof document !== "undefined" && typeof window !== "undefined") {
 
 /* Node 测试导出 */
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { normalize, computeStats, predict, genDanTuo, genRandom, cnk, combos, simulateWeighted, softmax, adaptGitHub, DATA_SOURCES };
+  module.exports = { normalize, mergeDraws, computeStats, predict, genDanTuo, genRandom, cnk, combos, simulateWeighted, softmax, adaptGitHub, DATA_SOURCES };
 }
 
 </script>

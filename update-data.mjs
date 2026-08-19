@@ -65,7 +65,7 @@ async function main() {
       cwl = s.adapt(json);
       used = s.name;
       usedCount = draws.length;
-      console.log(`成功（${draws.length} 期，最新 ${draws[draws.length - 1].issue}）`);
+      console.log(`成功（${draws.length} 期，${draws[0].issue} ~ ${draws[draws.length - 1].issue}，最新 ${draws[draws.length - 1].issue}）`);
       break;
     } catch (e) {
       console.log("失败 - " + e.message);

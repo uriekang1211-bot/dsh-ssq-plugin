@@ -56,18 +56,19 @@ dsh plugin --profile web remove dsh-ssq-plugin
 
 ## 数据说明
 
-- 内置最新 **1000 期**开奖数据（数据源：中国福利彩票发行管理中心官网 cwl.gov.cn，`issueCount=1000` 一次拉取）
+- 内置 **最近 1000 期**开奖数据（数据源：中国福利彩票发行管理中心官网 cwl.gov.cn），历史数据**直接保存在本地**（插件内置快照 `data/ssq-history.json` / HTML 内嵌 `history.json`），离线也能完整分析
+- 更新采用**增量机制**：只在本地基线基础上拉取**最新 200 期**（官方接口 `issueCount=200`）→ 按期号去重合并 → 截取最近 1000 期；快照过期太久（合并出现缺口）时自动回退全量 `issueCount=1000` 重建；更新后显示「当前 N 期（最旧 ~ 最新）」
 - 数据过期后，**三种更新方式**（按推荐顺序）：
 
 | 方式 | 操作 | 说明 |
 |---|---|---|
-| ① 页面在线更新 | 点「**在线更新**」 | 自动**多源降级**：官方直连 → GitHub 每日镜像（raw）→ jsDelivr CDN。官方接口无 CORS 头浏览器会拦截，此时自动切换镜像源（镜像带 `Access-Control-Allow-Origin: *`，浏览器可直连） |
-| ② 本机一键脚本 | 终端运行 `node update-data.mjs` | 无浏览器跨域限制，直接拉官方接口 → 重写 `history.json` → 自动重建 `dist/index.html`，**最可靠** |
+| ① 页面在线更新 | 点「**在线更新**」 | 增量合并更新：官方增量 → 官方全量回退 → GitHub 镜像 / jsDelivr CDN（带 CORS 头，浏览器可直连）。更新后提示「当前 1000 期（最旧 ~ 最新）」 |
+| ② 本机一键脚本 | 终端运行 `node update-data.mjs` | 无浏览器跨域限制，直接拉官方全量 1000 期 → 重写 `history.json` → 自动重建 `dist/index.html`，**最可靠** |
 | ③ 手动导入 | 「导出数据」→ 替换 JSON → 「导入数据」 | 兜底方案 |
 
 - 在线更新失败时，页面会列出每个数据源的具体失败原因，并提示上述备选方案。
 - 官方数据接口示例：
-  `https://www.cwl.gov.cn/cwl_admin/front/cwlkj/search/kjxx/findDrawNotice?name=ssq&issueCount=100`
+  `https://www.cwl.gov.cn/cwl_admin/front/cwlkj/search/kjxx/findDrawNotice?name=ssq&issueCount=200`
 - 数据镜像仓库：[sinyu1012/Double-Color-Ball-AI](https://github.com/sinyu1012/Double-Color-Ball-AI)（每日更新）
 
 ## 文件结构
