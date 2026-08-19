@@ -1,6 +1,6 @@
 // 本机一键更新脚本（无浏览器 CORS 限制）
 // 用法：cd ssq-plugin && node update-data.mjs
-// 作用：从官方接口 / GitHub 每日镜像拉取最新双色球数据 → 更新 history.json → 重建 dist/index.html
+// 作用：从官方接口 / GitHub 每日镜像拉取最近 1000 期双色球数据 → 更新 history.json → 重建 dist/index.html
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -42,7 +42,7 @@ function adaptGitHub(json) {
 const SOURCES = [
   {
     name: "官方福彩接口",
-    url: "https://www.cwl.gov.cn/cwl_admin/front/cwlkj/search/kjxx/findDrawNotice?name=ssq&issueCount=100",
+    url: "https://www.cwl.gov.cn/cwl_admin/front/cwlkj/search/kjxx/findDrawNotice?name=ssq&issueCount=1000",
     adapt: j => j,
     headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36", "Referer": "https://www.cwl.gov.cn/", "Accept": "application/json" }
   },

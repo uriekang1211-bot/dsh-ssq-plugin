@@ -12,12 +12,12 @@ function check(name, cond, extra) {
 async function main() {
   // 1. 数据规范化
   const draws = lib.normalize(raw);
-  check("解析出 100 期", draws.length === 100, `实际 ${draws.length}`);
+  check("解析出 1000 期", draws.length === 1000, `实际 ${draws.length}`);
   check("时间正序（最旧在前）", draws[0].issue < draws[draws.length - 1].issue, `${draws[0].issue} -> ${draws[draws.length - 1].issue}`);
   check("每期 6 红 1 蓝", draws.every(d => d.red.length === 6 && d.blue >= 1 && d.blue <= 16));
   check("红球在 1-33 内", draws.every(d => d.red.every(n => n >= 1 && n <= 33)));
 
-  // 2. 统计：次数守恒
+  // 2. 统计：次数守恒（100 期窗口）
   const s = lib.computeStats(draws, 100);
   const redSum = s.red.reduce((a, r) => a + r.cnt, 0);
   const blueSum = s.blue.reduce((a, b) => a + b.cnt, 0);
@@ -28,6 +28,14 @@ async function main() {
   const cold = s.red.filter(r => r.status === "cold").length;
   console.log(`      热度分布: 热 ${hot} / 温 ${33 - hot - cold} / 冷 ${cold}`);
   check("遗漏为非负整数", s.red.every(r => r.gap >= 0 && Number.isInteger(r.gap)));
+
+  // 2b. 统计：千期窗口（默认窗口 1000）
+  const s1k = lib.computeStats(draws, 1000);
+  check("千期窗口红球总次数 = 6000", s1k.red.reduce((a, r) => a + r.cnt, 0) === 6000, `实际 ${s1k.red.reduce((a, r) => a + r.cnt, 0)}`);
+  check("千期窗口蓝球总次数 = 1000", s1k.blue.reduce((a, b) => a + b.cnt, 0) === 1000);
+  check("千期窗口频率之和 = 1", Math.abs(s1k.red.reduce((a, r) => a + r.freq, 0) - 1) < 1e-9);
+  const p1k = lib.predict(s1k, "balanced");
+  check("千期预测推荐 = 6红+1蓝", p1k.rec.red.length === 6 && p1k.rec.red.every(n => n >= 1 && n <= 33) && p1k.rec.blue >= 1 && p1k.rec.blue <= 16);
 
   // 3. 预测：概率归一 + 期望次数守恒
   for (const key of ["balanced", "cold", "hot"]) {

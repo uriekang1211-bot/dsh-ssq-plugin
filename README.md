@@ -18,7 +18,7 @@ dsh plugin --profile web add github:uriekang1211-bot/dsh-ssq-plugin
 - 「用 ssq 冷号回补模型预测下一期」
 - 「用 ssq 按胆拖规则生成 5 注：胆码 01 08，拖码 12 15 20 23 28 31，蓝球 05 09」
 
-插件自动多源拉取最新开奖数据（官方接口 → GitHub 镜像 → CDN），失败时回退内置快照。
+插件自动多源拉取**最近 1000 期**开奖数据（官方接口 → GitHub 镜像 → CDN），失败时回退内置快照。
 
 ### 卸载
 ```sh
@@ -31,8 +31,8 @@ dsh plugin --profile web remove dsh-ssq-plugin
 
 ## 三大功能
 
-### 1️⃣ 趋势追踪（历史百期）
-- 统计最近 **10–100 期**（默认 100 期）每个号码的表现：出现次数、频率、近 10 期、当前遗漏、最大遗漏、平均遗漏
+### 1️⃣ 趋势追踪（历史千期）
+- 统计最近 **10–1000 期**（默认 1000 期）每个号码的表现：出现次数、频率、近 10 期、当前遗漏、最大遗漏、平均遗漏
 - 热 / 温 / 冷 三档热度标记，近 10 期 vs 前 10 期对比趋势箭头（↑↓→）
 - 红球 / 蓝球出现次数柱状图（点击柱子查看该号码的「滚动 10 期频率」走势曲线）
 - 最近 N 期（10/20/30/50）出现热力图
@@ -56,7 +56,7 @@ dsh plugin --profile web remove dsh-ssq-plugin
 
 ## 数据说明
 
-- 内置最新 **100 期**开奖数据（数据源：中国福利彩票发行管理中心官网 cwl.gov.cn）
+- 内置最新 **1000 期**开奖数据（数据源：中国福利彩票发行管理中心官网 cwl.gov.cn，`issueCount=1000` 一次拉取）
 - 数据过期后，**三种更新方式**（按推荐顺序）：
 
 | 方式 | 操作 | 说明 |
@@ -99,8 +99,8 @@ dsh-ssq-plugin/
    name: uriekang1211-bot/dsh-ssq-plugin
    category: tools
    description:
-     en: 'SSQ (China Welfare Lottery Double Color Ball) helper for DeepSeek Harness: 100-draw trend tracking, frequency prediction and dan-tuo/random generation via the ssq tool.'
-     zh: '双色球助手 DSH 插件：百期趋势追踪、智能预测、胆拖/随机选号，对话中直接调用 ssq 工具。'
+     en: 'SSQ (China Welfare Lottery Double Color Ball) helper for DeepSeek Harness: 1000-draw trend tracking, frequency prediction and dan-tuo/random generation via the ssq tool.'
+     zh: '双色球助手 DSH 插件：千期趋势追踪、智能预测、胆拖/随机选号，对话中直接调用 ssq 工具。'
    ```
 2. 在 fork 中运行 `npm ci && node scripts/generate-readme.mjs` 重新生成两个 README，与 YAML 一起提交（README 由脚本生成，勿手改）
 3. 收录后（通常一天内），在 DSH Web 的插件市场即可一键安装
