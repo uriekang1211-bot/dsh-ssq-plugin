@@ -139,6 +139,14 @@ async function main() {
     check("tool trend 正常返回", t1.ok === true && /趋势统计/.test(t1.message) && t1.detail.startsWith("{"));
     const t2 = await registered.execute({ action: "predict", preset: "cold" });
     check("tool predict 正常返回", t2.ok === true && /推荐号码/.test(t2.message));
+    const t2d = JSON.parse(t2.detail);
+    check("tool predict 默认基于最近 1000 期", /基于最近 1000 期/.test(t2.message) && t2d.window === 1000 && t2d.first && t2d.last);
+    const t2b = await registered.execute({ action: "predict", preset: "hot", window: 500 });
+    const t2bd = JSON.parse(t2b.detail);
+    check("tool predict 可选 500 期数据范围", /基于最近 500 期/.test(t2b.message) && t2bd.window === 500 && t2bd.first !== t2bd.last);
+    const t2c = await registered.execute({ action: "predict", preset: "balanced", window: 100 });
+    check("tool predict 可选 100 期数据范围", /基于最近 100 期/.test(t2c.message) && JSON.parse(t2c.detail).window === 100);
+    check("tool predict 输出含预测数据范围字段", typeof t2d.first === "string" && typeof t2d.last === "string");
     const t3 = await registered.execute({ action: "generate", mode: "random", count: 3 });
     const t3d = JSON.parse(t3.detail);
     check("tool random 生成 3 注", t3.ok === true && t3d.combos.length === 3);
