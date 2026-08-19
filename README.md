@@ -113,6 +113,10 @@ node build.mjs   # 重新构建 dist/index.html 并同步 data/ 快照
 node test.cjs    # 运行算法自测
 ```
 
+## 更新记录
+
+见 [CHANGELOG.md](CHANGELOG.md)（v1.1.0：数据升级为最近 1000 期，插件与 HTML 版同步）。
+
 ## 免责声明
 
 本工具仅供学习与娱乐参考，不构成任何投注建议。请理性购彩、量力而行，未成年人禁止购彩。

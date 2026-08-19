@@ -1,6 +1,6 @@
 /* ============================================================
  * 双色球助手 (SSQ Helper)
- * 1) 百期趋势追踪：每个红球/蓝球号码在历史窗口中的出现次数、频率、
+ * 1) 千期趋势追踪：每个红球/蓝球号码在历史窗口中的出现次数、频率、
  *    遗漏、热度状态、走势图、热力图
  * 2) 智能预测：基于 频率 + 近期衰减 + 遗漏回补 三信号的加权评分模型
  *    （纯统计娱乐算法，不改变随机本质）
@@ -710,7 +710,7 @@ function adaptGitHub(json) {
 const DATA_SOURCES = [
   {
     name: "官方福彩接口（直连）",
-    url: "https://www.cwl.gov.cn/cwl_admin/front/cwlkj/search/kjxx/findDrawNotice?name=ssq&issueCount=100",
+    url: "https://www.cwl.gov.cn/cwl_admin/front/cwlkj/search/kjxx/findDrawNotice?name=ssq&issueCount=1000",
     adapt: json => json
   },
   {
