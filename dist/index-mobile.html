@@ -186,6 +186,20 @@ canvas{width:100%;display:block}
   <!-- ==================== 趋势追踪 ==================== -->
   <section id="tab-trend" class="panel active">
     <div class="card">
+      <div class="card-head">
+        <h3>🕗 开奖号码查询</h3>
+        <span class="hint">选择期号查看对应开奖结果</span>
+      </div>
+      <div class="ctrl-row">
+        <label>期号
+          <select id="issueSelect"></select>
+        </label>
+        <span id="issueDate" class="hint"></span>
+      </div>
+      <div id="issueResult" class="chips"></div>
+    </div>
+
+    <div class="card">
       <div class="ctrl-row">
         <label>统计窗口
           <select id="winSelect">
@@ -1360,6 +1374,32 @@ function updateHeader() {
   $("dataLatest").textContent = `${last.issue} 期（${last.date}）`;
 }
 
+/* ---- 开奖号码查询：期号选择器（有数据的全部期号可选，最新在前） ---- */
+function refreshIssueSelect() {
+  const sel = $("issueSelect");
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = "";
+  for (let i = DRAW_DATA.length - 1; i >= 0; i--) {
+    const d = DRAW_DATA[i];
+    sel.appendChild(el("option", { value: d.issue, text: d.issue + " 期" }));
+  }
+  if (prev && sel.querySelector('option[value="' + prev + '"]')) sel.value = prev;
+  renderIssueResult();
+}
+
+function renderIssueResult() {
+  const sel = $("issueSelect"), box = $("issueResult"), dateEl = $("issueDate");
+  if (!sel || !box || !DRAW_DATA.length) return;
+  const d = DRAW_DATA.find(x => x.issue === sel.value);
+  box.innerHTML = "";
+  if (dateEl) dateEl.textContent = "";
+  if (!d) return;
+  d.red.forEach(n => box.appendChild(el("span", { class: "chip", text: String(n).padStart(2, "0") })));
+  box.appendChild(el("span", { class: "chip blue", text: String(d.blue).padStart(2, "0") }));
+  if (dateEl) dateEl.textContent = `开奖日期：${d.date}`;
+}
+
 function toExportJSON() {
   return {
     state: 0, message: "双色球历史数据（双色球助手导出）", Tflag: 0,
@@ -1383,6 +1423,7 @@ function importJSON(text) {
   if (draws.length < 10) { alert(`数据无效或不足 10 期（解析到 ${draws.length} 期）。请提供形如 {"result":[{...}]} 的数据，最新期在前。`); return; }
   DRAW_DATA = draws;
   updateHeader();
+  refreshIssueSelect();
   renderTrend();
   $("importPanel").classList.add("hidden");
   $("importText").value = "";
@@ -1453,9 +1494,11 @@ async function fetchSource(src, timeoutMs) {
   }
 }
 
-async function fetchOnline() {
+async function fetchOnline(opts) {
+  opts = opts || {};
+  const silent = !!opts.silent; // 静默模式：自动更新用，不弹提示
   const btn = $("btnOnline");
-  btn.disabled = true;
+  if (btn) { btn.disabled = true; }
   const failures = [];
   const baseline = DRAW_DATA; // 本地保存的基线（内嵌 1000 期快照）
 
@@ -1468,10 +1511,13 @@ async function fetchOnline() {
   const done = (draws, label, extra) => {
     DRAW_DATA = draws;
     updateHeader();
+    refreshIssueSelect();
     renderTrend();
-    btn.disabled = false; btn.textContent = "在线更新";
-    const first = draws[0], last = draws[draws.length - 1];
-    alert(`✅ ${label}\n当前 ${draws.length} 期：${first.issue} ~ ${last.issue}，最新 ${last.issue} 期（${last.date}）${extra || ""}`);
+    if (btn) { btn.disabled = false; btn.textContent = "在线更新"; }
+    if (!silent) {
+      const first = draws[0], last = draws[draws.length - 1];
+      alert(`✅ ${label}\n当前 ${draws.length} 期：${first.issue} ~ ${last.issue}，最新 ${last.issue} 期（${last.date}）${extra || ""}`);
+    }
   };
 
   // ① 官方增量：拉最新 200 期 → 与本地基线合并
@@ -1507,12 +1553,14 @@ async function fetchOnline() {
   }
 
   // ④ 全部失败
-  btn.disabled = false; btn.textContent = "在线更新";
-  const importTip = $("btnImport") ? "\n3. 点「导出数据」拿到 JSON → 用官方接口最新数据替换 → 再点「导入数据」粘贴。" : "";
-  alert("❌ 全部数据源尝试失败：\n\n" + failures.join("\n") +
-    "\n\n解决办法（任选其一）：\n" +
-    "1. 检查网络后重新点击「在线更新」；\n" +
-    "2. 本机已装 Node.js 的话，运行插件目录里的「node update-data.mjs」一键更新（无浏览器限制）；" + importTip);
+  if (btn) { btn.disabled = false; btn.textContent = "在线更新"; }
+  if (!silent) {
+    const importTip = $("btnImport") ? "\n3. 点「导出数据」拿到 JSON → 用官方接口最新数据替换 → 再点「导入数据」粘贴。" : "";
+    alert("❌ 全部数据源尝试失败：\n\n" + failures.join("\n") +
+      "\n\n解决办法（任选其一）：\n" +
+      "1. 检查网络后重新点击「在线更新」；\n" +
+      "2. 本机已装 Node.js 的话，运行插件目录里的「node update-data.mjs」一键更新（无浏览器限制）；" + importTip);
+  }
 }
 
 /* ---------------- 初始化 ---------------- */
@@ -1536,6 +1584,7 @@ function init() {
   $("winSelect").onchange = renderTrend;
   $("sortSelect").onchange = renderTrend;
   $("heatSelect").onchange = renderHeat;
+  if ($("issueSelect")) { $("issueSelect").onchange = renderIssueResult; refreshIssueSelect(); }
 
   // 预测
   $("btnPredict").onclick = runAnalyze;
@@ -1571,6 +1620,9 @@ function init() {
 
   renderTrend();
   if (!DRAW_DATA.length) alert("未内置历史数据，请通过「在线更新」拉取最新数据。");
+
+  // 每次打开页面自动静默更新到最新一期数据（不弹窗，成功后刷新开奖号码与统计）
+  setTimeout(() => { fetchOnline({ silent: true }); }, 600);
 }
 
 if (typeof document !== "undefined" && typeof window !== "undefined") {

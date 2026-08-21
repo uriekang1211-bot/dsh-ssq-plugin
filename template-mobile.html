@@ -36,6 +36,20 @@
   <!-- ==================== 趋势追踪 ==================== -->
   <section id="tab-trend" class="panel active">
     <div class="card">
+      <div class="card-head">
+        <h3>🕗 开奖号码查询</h3>
+        <span class="hint">选择期号查看对应开奖结果</span>
+      </div>
+      <div class="ctrl-row">
+        <label>期号
+          <select id="issueSelect"></select>
+        </label>
+        <span id="issueDate" class="hint"></span>
+      </div>
+      <div id="issueResult" class="chips"></div>
+    </div>
+
+    <div class="card">
       <div class="ctrl-row">
         <label>统计窗口
           <select id="winSelect">
